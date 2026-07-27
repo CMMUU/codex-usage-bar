@@ -1,4 +1,5 @@
 import CodexUsageCore
+import CodexUsageShared
 import Darwin
 import Foundation
 
@@ -139,6 +140,7 @@ struct CodexUsageVerifier {
     }
 
     try verifyExecutableOverride()
+    try verifySharedUsageStore()
   }
 
   private static func runIntegrationCheck() async throws {
@@ -177,6 +179,35 @@ struct CodexUsageVerifier {
       homeDirectory: temporaryDirectory.path
     )
     try expect(resolved.path == executable.path, "优先使用 CODEX_BINARY_PATH")
+  }
+
+  private static func verifySharedUsageStore() throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer {
+      try? FileManager.default.removeItem(at: temporaryDirectory)
+    }
+
+    let updatedAt = Date(timeIntervalSince1970: 1_785_645_051)
+    let snapshot = SharedUsageSnapshot(
+      usedPercent: 120,
+      resetsAt: updatedAt.addingTimeInterval(3_600),
+      planType: "pro",
+      limitName: "Codex",
+      updatedAt: updatedAt
+    )
+    try expect(snapshot.usedPercent == 100, "共享快照限制使用率范围")
+    try expect(snapshot.remainingPercent == 0, "共享快照计算剩余额度")
+    try expect(
+      snapshot.isStale(
+        relativeTo: updatedAt.addingTimeInterval(901)
+      ),
+      "共享快照识别过期数据"
+    )
+
+    let store = SharedUsageStore(directoryURL: temporaryDirectory)
+    try store.save(snapshot)
+    try expect(store.load() == snapshot, "共享快照原子写入与读取")
   }
 
   private static func decodeRateLimits(_ json: String) throws -> RateLimitsReadResult {

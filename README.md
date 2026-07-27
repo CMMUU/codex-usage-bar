@@ -31,6 +31,8 @@ or storing your authentication token.
 - Manual refresh
 - Launch at login
 - Native SwiftUI menu bar interface
+- Native WidgetKit widgets for the desktop and Notification Center
+- Small and medium widget layouts with stale-data indication
 - No browser cookies, copied OAuth tokens, or direct token-file access
 
 ## Requirements
@@ -42,11 +44,27 @@ or storing your authentication token.
 
 API-key-only or local-model sessions may not expose ChatGPT account rate limits.
 
-## Install from source
+## Install
+
+Download the latest notarized universal DMG from
+[GitHub Releases](https://github.com/CMMUU/codex-usage-bar/releases/latest),
+open it, and drag **Codex Usage Bar** to **Applications**.
+
+After launching the app once, add **Codex 周限额** from the macOS widget
+gallery to the desktop or Notification Center.
+
+Each release includes a `.sha256` file:
+
+```bash
+shasum -a 256 -c Codex-Usage-Bar-vX.Y.Z-universal.dmg.sha256
+```
+
+## Build from source
 
 ```bash
 git clone https://github.com/CMMUU/codex-usage-bar.git
 cd codex-usage-bar
+brew install xcodegen
 make package
 open "dist/Codex Usage Bar.app"
 ```
@@ -57,9 +75,9 @@ The packaged app is written to:
 dist/Codex Usage Bar.app
 ```
 
-The local build uses an ad-hoc signature. A Developer ID-signed and notarized
-download will be added in a future release. Until then, building from source is
-the recommended installation path.
+Local builds use an ad-hoc signature unless `CODE_SIGN_IDENTITY` and a matching
+App Group identifier are supplied. Published DMGs use Developer ID signing,
+Apple notarization, stapling, and GitHub artifact attestations.
 
 ## How it works
 
@@ -80,6 +98,8 @@ flowchart LR
     B --> D["account/rateLimits/read"]
     D --> E["Select seven-day window"]
     E --> F["SwiftUI MenuBarExtra"]
+    F --> G["App Group snapshot"]
+    G --> H["WidgetKit timeline"]
 ```
 
 The app discovers the Codex executable in this order:
@@ -100,8 +120,8 @@ Codex Usage Bar:
 - does not call undocumented ChatGPT HTTP endpoints directly
 
 It delegates authentication and token refresh to the locally installed Codex
-app-server. Only normalized usage percentages and reset times are held in
-memory.
+app-server. The app writes only the normalized usage percentage, reset time,
+plan label, and update time to its private App Group container for the widget.
 
 ## Development
 
@@ -115,8 +135,17 @@ make test
 # Run checks against the currently signed-in local Codex account
 make integration-test
 
-# Build and ad-hoc sign the app bundle
+# Build the WidgetKit extension with SwiftPM
+make widget-build
+
+# Regenerate the checked-in Xcode project
+make xcode-project
+
+# Build and ad-hoc sign the universal app bundle
 make package
+
+# Build the universal DMG and checksum
+make release-package
 
 # Regenerate the README screenshot with deterministic sample data
 make docs-screenshot
@@ -136,6 +165,7 @@ The verification executable covers:
 - weekly-window selection
 - invalid percentage clamping
 - executable-path overrides
+- shared widget snapshot persistence and staleness
 - optional live Codex integration
 
 ## Project structure
@@ -143,7 +173,9 @@ The verification executable covers:
 ```text
 Sources/
 ├── CodexUsageBar/       # SwiftUI menu bar application
-└── CodexUsageCore/      # Codex protocol client and usage selection
+├── CodexUsageCore/      # Codex protocol client and usage selection
+├── CodexUsageShared/    # App Group snapshot model and persistence
+└── CodexUsageWidget/    # WidgetKit extension
 Tests/
 └── CodexUsageVerifier/  # Dependency-free verification executable
 web/
@@ -162,7 +194,6 @@ opening a public issue.
 
 ## Roadmap
 
-- Developer ID-signed and notarized downloads
 - Optional short-window usage display
 - Improved multi-account and multi-limit presentation
 - User-configurable refresh interval

@@ -30,6 +30,8 @@ Codex 让开发者保持心流，但查看剩余用量仍然需要中断当前�
 - 支持手动刷新
 - 支持登录时启动
 - 原生 SwiftUI 菜单栏界面
+- 原生 WidgetKit 小组件，可添加到桌面和通知中心
+- 支持小号、中号布局和数据过期提示
 - 不读取浏览器 Cookie，不复制 OAuth Token，不直接读取认证文件
 
 ## 环境要求
@@ -41,11 +43,26 @@ Codex 让开发者保持心流，但查看剩余用量仍然需要中断当前�
 
 仅使用 API Key 或本地模型的会话可能不会返回 ChatGPT 账号限额。
 
-## 从源码安装
+## 安装
+
+从 [GitHub Releases](https://github.com/CMMUU/codex-usage-bar/releases/latest)
+下载最新的已公证 Universal DMG，打开后将 **Codex Usage Bar** 拖入
+**Applications**。
+
+首次启动并刷新成功后，可以从 macOS 小组件库将 **Codex 周限额** 添加到桌面或通知中心。
+
+每个版本同时提供 `.sha256` 校验文件：
+
+```bash
+shasum -a 256 -c Codex-Usage-Bar-vX.Y.Z-universal.dmg.sha256
+```
+
+## 从源码构建
 
 ```bash
 git clone https://github.com/CMMUU/codex-usage-bar.git
 cd codex-usage-bar
+brew install xcodegen
 make package
 open "dist/Codex Usage Bar.app"
 ```
@@ -56,8 +73,8 @@ open "dist/Codex Usage Bar.app"
 dist/Codex Usage Bar.app
 ```
 
-本地构建使用 ad-hoc 签名。后续版本会增加 Developer ID 签名和 Apple
-公证的下载包；在此之前，推荐从源码构建。
+未提供签名参数时，本地构建使用 ad-hoc 签名。正式 DMG 使用 Developer ID
+签名、Apple 公证、stapling 和 GitHub 构建来源证明。
 
 ## 工作原理
 
@@ -77,6 +94,8 @@ flowchart LR
     B --> D["account/rateLimits/read"]
     D --> E["识别七天窗口"]
     E --> F["SwiftUI 菜单栏"]
+    F --> G["App Group 共享快照"]
+    G --> H["WidgetKit 时间线"]
 ```
 
 Codex 可执行文件按以下顺序查找：
@@ -96,7 +115,8 @@ Codex Usage Bar：
 - 不发送分析数据
 - 不直接调用未公开的 ChatGPT HTTP 接口
 
-认证和令牌刷新由本机 Codex app-server 负责。应用只在内存中保存标准化后的用量比例和重置时间。
+认证和令牌刷新由本机 Codex app-server 负责。应用只把标准化后的用量比例、
+重置时间、套餐名称和更新时间写入应用私有的 App Group，供小组件读取。
 
 ## 开发与验证
 
@@ -104,7 +124,10 @@ Codex Usage Bar：
 make build
 make test
 make integration-test
+make widget-build
+make xcode-project
 make package
+make release-package
 make docs-screenshot
 make public-release-check
 make web-check
@@ -118,6 +141,7 @@ make web-deploy
 - 周窗口识别
 - 异常百分比边界
 - Codex 路径覆盖
+- 小组件共享快照持久化和过期判断
 - 可选的本机实时集成测试
 
 官网位于 `web/`，由 Cloudflare Worker 提供静态页面和 GitHub
@@ -132,7 +156,6 @@ Release 查询接口。下载按钮始终指向 GitHub，不在 Cloudflare 保�
 
 ## 路线图
 
-- Developer ID 签名和 Apple 公证下载
 - 可选的短周期用量显示
 - 改进多账号和多限额展示
 - 自定义刷新间隔

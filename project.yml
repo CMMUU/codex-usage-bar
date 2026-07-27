@@ -1,0 +1,86 @@
+name: CodexUsageBar
+
+options:
+  bundleIdPrefix: io.cmmuu
+  deploymentTarget:
+    macOS: "13.0"
+  groupSortPosition: top
+
+settings:
+  base:
+    APP_GROUP_IDENTIFIER: group.io.cmmuu.codex-usage-bar
+    CURRENT_PROJECT_VERSION: 2
+    DEVELOPMENT_LANGUAGE: zh_CN
+    ENABLE_HARDENED_RUNTIME: YES
+    MARKETING_VERSION: 0.2.0
+    SWIFT_VERSION: 5.0
+
+targets:
+  CodexUsageCore:
+    type: library.static
+    platform: macOS
+    sources:
+      - Sources/CodexUsageCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.cmmuu.codex-usage-core
+        PRODUCT_NAME: CodexUsageCore
+
+  CodexUsageShared:
+    type: library.static
+    platform: macOS
+    sources:
+      - Sources/CodexUsageShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.cmmuu.codex-usage-shared
+        PRODUCT_NAME: CodexUsageShared
+
+  CodexUsageBar:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/CodexUsageBar
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: Resources/CodexUsageBar.entitlements
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Resources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: io.cmmuu.codex-usage-bar
+        PRODUCT_NAME: Codex Usage Bar
+    dependencies:
+      - target: CodexUsageCore
+      - target: CodexUsageShared
+      - target: CodexUsageWidget
+
+  CodexUsageWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Sources/CodexUsageWidget
+    settings:
+      base:
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_ENTITLEMENTS: Resources/CodexUsageWidget.entitlements
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Resources/WidgetInfo.plist
+        PRODUCT_BUNDLE_IDENTIFIER: io.cmmuu.codex-usage-bar.widget
+        PRODUCT_NAME: CodexUsageWidget
+        SKIP_INSTALL: YES
+    dependencies:
+      - target: CodexUsageShared
+
+schemes:
+  CodexUsageBar:
+    build:
+      targets:
+        CodexUsageBar: all
+        CodexUsageCore: all
+        CodexUsageShared: all
+        CodexUsageWidget: all
+    run:
+      config: Debug
+    archive:
+      config: Release

@@ -4,10 +4,10 @@ const translations = {
     headlineOne: "Your Codex limit.",
     headlineTwo: "One glance away.",
     heroDescription:
-      "Stop digging through account menus. See weekly usage, remaining quota, and reset time directly from your menu bar.",
+      "Stop digging through account menus. See weekly usage, remaining quota, and reset time from your menu bar or macOS widgets.",
     download: "Get for macOS",
     source: "View source",
-    requirements: "macOS 13+ · Apple Silicon",
+    requirements: "macOS 13+ · Universal",
     license: "MIT licensed",
     featureOneTitle: "Instant visibility",
     featureOneBody:
@@ -15,9 +15,9 @@ const translations = {
     featureTwoTitle: "Local by design",
     featureTwoBody:
       "Talks to your local Codex app-server. No copied tokens.",
-    featureThreeTitle: "Quietly native",
+    featureThreeTitle: "Widget-ready",
     featureThreeBody:
-      "A lightweight SwiftUI companion built for the macOS menu bar.",
+      "Keep usage visible on the desktop or in Notification Center.",
     storyTitle: "Stay in flow.<br>Keep usage in sight.",
     storyBody:
       "Checking Codex usage used to mean opening the account menu, then opening usage details. This tiny app turns that repeated detour into a single click.",
@@ -41,17 +41,17 @@ const translations = {
     headlineOne: "Codex 限额。",
     headlineTwo: "抬眼即见。",
     heroDescription:
-      "不必再层层打开账户菜单。直接从菜单栏查看周用量、剩余额度与重置时间。",
+      "不必再层层打开账户菜单。直接从菜单栏或 macOS 小组件查看周用量、剩余额度与重置时间。",
     download: "获取 macOS 版本",
     source: "查看源码",
-    requirements: "macOS 13+ · Apple 芯片",
+    requirements: "macOS 13+ · Universal",
     license: "MIT 开源",
     featureOneTitle: "状态一目了然",
     featureOneBody: "周限额和重置时间常驻菜单栏，不打断当前工作。",
     featureTwoTitle: "本地优先",
     featureTwoBody: "连接本机 Codex app-server，不复制认证令牌。",
-    featureThreeTitle: "原生轻量",
-    featureThreeBody: "专为 macOS 菜单栏打造的轻量 SwiftUI 应用。",
+    featureThreeTitle: "原生小组件",
+    featureThreeBody: "在桌面或通知中心持续掌握 Codex 用量。",
     storyTitle: "保持专注。<br>用量始终在眼前。",
     storyBody:
       "过去查看 Codex 用量，需要打开账户菜单，再进入用量详情。这个小工具把反复出现的操作缩短为一次点击。",

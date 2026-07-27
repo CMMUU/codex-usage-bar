@@ -1,0 +1,161 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing semantic version tag to publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    env:
+      APPLE_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+      APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_NOTARY_KEY_BASE64: ${{ secrets.APPLE_NOTARY_KEY_BASE64 }}
+      APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+      APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Resolve release tag
+        id: release
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="$INPUT_TAG"
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a semantic version tag such as v0.2.0" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >>"$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"
+
+      - name: Check out release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Validate signing and notarization secrets
+        run: |
+          required=(
+            APPLE_DEVELOPER_ID_CERTIFICATE_BASE64
+            APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD
+            APPLE_TEAM_ID
+            APPLE_NOTARY_KEY_BASE64
+            APPLE_NOTARY_KEY_ID
+            APPLE_NOTARY_ISSUER_ID
+          )
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required GitHub Actions secret: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Import Developer ID certificate
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/codex-usage-signing.keychain-db"
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+
+          printf '%s' "$APPLE_DEVELOPER_ID_CERTIFICATE_BASE64" \
+            | base64 --decode >"$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+
+          IDENTITY="$(
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+              | awk '/Developer ID Application/{print $2; exit}'
+          )"
+          if [[ -z "$IDENTITY" ]]; then
+            echo "Developer ID Application identity was not imported" >&2
+            exit 1
+          fi
+          echo "CODE_SIGN_IDENTITY=$IDENTITY" >>"$GITHUB_ENV"
+          echo "APP_GROUP_IDENTIFIER=$APPLE_TEAM_ID.io.cmmuu.codex-usage-bar" \
+            >>"$GITHUB_ENV"
+
+      - name: Build, sign, notarize, and staple DMG
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: make release-package
+
+      - name: Verify release artifacts
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          APP="dist/Codex Usage Bar.app"
+          WIDGET="$APP/Contents/PlugIns/CodexUsageWidget.appex"
+          DMG="dist/Codex-Usage-Bar-v$VERSION-universal.dmg"
+
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign --verify --verbose=2 "$DMG"
+          xcrun stapler validate "$DMG"
+          spctl --assess --type execute --verbose=2 "$APP"
+          (
+            cd dist
+            shasum -a 256 -c "$(basename "$DMG").sha256"
+          )
+          test -d "$WIDGET"
+
+      - name: Generate build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/Codex-Usage-Bar-v${{ steps.release.outputs.version }}-universal.dmg
+            dist/Codex-Usage-Bar-v${{ steps.release.outputs.version }}-universal.dmg.sha256
+
+      - name: Publish GitHub Release
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          DMG="dist/Codex-Usage-Bar-v$VERSION-universal.dmg"
+          CHECKSUM="$DMG.sha256"
+          NOTES="docs/release-notes/$TAG.md"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$DMG" "$CHECKSUM" --clobber
+            gh release edit "$TAG" \
+              --title "Codex Usage Bar $TAG" \
+              --notes-file "$NOTES" \
+              --latest
+          else
+            gh release create "$TAG" "$DMG" "$CHECKSUM" \
+              --title "Codex Usage Bar $TAG" \
+              --notes-file "$NOTES" \
+              --latest
+          fi

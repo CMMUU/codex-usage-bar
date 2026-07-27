@@ -35,7 +35,9 @@ REQUIRED_PATHS = {
     "CONTRIBUTING.md",
     "SECURITY.md",
     ".github/workflows/ci.yml",
+    ".github/workflows/release.yml",
     "docs/images/usage-popover.png",
+    "project.yml",
 }
 FORBIDDEN_PATTERNS = {
     "absolute macOS user path": re.compile(r"/Users/[A-Za-z0-9._-]+/"),
