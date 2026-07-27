@@ -32,7 +32,6 @@ const translations = {
     widgetSyncBody:
       "Usage stays on your Mac and the last available snapshot remains visible.",
     widgetSynced: "SYNCED LOCALLY",
-    widgetPreviewLanguage: "Widget preview language",
     widgetSmallLabel: "SMALL",
     widgetMediumLabel: "MEDIUM",
     widgetUsedShort: "USED",
@@ -92,7 +91,6 @@ const translations = {
     widgetSyncTitle: "本地快照同步",
     widgetSyncBody: "用量数据保留在 Mac 本地，并持续展示最近一次可用快照。",
     widgetSynced: "本地已同步",
-    widgetPreviewLanguage: "小组件预览语言",
     widgetSmallLabel: "小尺寸",
     widgetMediumLabel: "中尺寸",
     widgetUsedShort: "已用",
@@ -134,12 +132,6 @@ const popoverLanguageSwitcher = document.querySelector(
 );
 const popoverLanguageButtons = document.querySelectorAll(
   "[data-popover-locale]",
-);
-const widgetLanguageSwitcher = document.querySelector(
-  "#widget-language-switch",
-);
-const widgetLanguageButtons = document.querySelectorAll(
-  "[data-widget-locale]",
 );
 const themeButton = document.querySelector("#theme-toggle");
 const themeLabel = document.querySelector("#theme-label");
@@ -272,15 +264,6 @@ function applyWidgetLocale(locale) {
       node.textContent = value;
     }
   }
-
-  widgetLanguageSwitcher?.setAttribute(
-    "aria-label",
-    translations[currentWidgetLocale].widgetPreviewLanguage,
-  );
-  for (const button of widgetLanguageButtons) {
-    const isActive = button.dataset.widgetLocale === currentWidgetLocale;
-    button.setAttribute("aria-pressed", String(isActive));
-  }
 }
 
 async function loadLatestRelease(force = false) {
@@ -326,12 +309,6 @@ function refreshReleaseWhenPageIsActive() {
 languageButton.addEventListener("click", () => {
   applyLocale(currentLocale === "zh" ? "en" : "zh");
 });
-
-for (const button of widgetLanguageButtons) {
-  button.addEventListener("click", () => {
-    applyWidgetLocale(button.dataset.widgetLocale);
-  });
-}
 
 for (const button of popoverLanguageButtons) {
   button.addEventListener("click", (event) => {

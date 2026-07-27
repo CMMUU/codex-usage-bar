@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${VERSION:-0.2.1}"
+VERSION="${VERSION:-0.2.2}"
 DMG_NAME="Codex-Usage-Bar-v$VERSION-universal.dmg"
 DMG_PATH="$ROOT/dist/$DMG_NAME"
 CHECKSUM_PATH="$ROOT/dist/$DMG_NAME.sha256"

@@ -16,6 +16,7 @@ final class UsageViewModel: ObservableObject {
 
   private let client: CodexAppServerClient
   private let sharedUsageStore: SharedUsageStore
+  private let sharedWidgetPreferencesStore: SharedWidgetPreferencesStore
   private let localUsageServer: LocalUsageSnapshotServer
   private var displayLanguage: AppLanguage
   private var activated = false
@@ -24,11 +25,14 @@ final class UsageViewModel: ObservableObject {
   init(
     client: CodexAppServerClient = CodexAppServerClient(),
     sharedUsageStore: SharedUsageStore = SharedUsageStore(),
+    sharedWidgetPreferencesStore: SharedWidgetPreferencesStore =
+      SharedWidgetPreferencesStore(),
     localUsageServer: LocalUsageSnapshotServer = LocalUsageSnapshotServer(),
     displayLanguage: AppLanguage = .systemDefault
   ) {
     self.client = client
     self.sharedUsageStore = sharedUsageStore
+    self.sharedWidgetPreferencesStore = sharedWidgetPreferencesStore
     self.localUsageServer = localUsageServer
     self.displayLanguage = displayLanguage
   }
@@ -74,10 +78,24 @@ final class UsageViewModel: ObservableObject {
   }
 
   func setDisplayLanguage(_ language: AppLanguage) {
-    guard displayLanguage != language else {
+    let languageChanged = displayLanguage != language
+    displayLanguage = language
+    localUsageServer.updateLanguage(language.rawValue)
+
+    do {
+      try sharedWidgetPreferencesStore.save(
+        SharedWidgetPreferences(languageCode: language.rawValue)
+      )
+    } catch {
+      fputs("Widget language update failed: \(error)\n", stderr)
+    }
+
+    guard languageChanged else {
+      WidgetCenter.shared.reloadTimelines(
+        ofKind: SharedUsageConfiguration.widgetKind
+      )
       return
     }
-    displayLanguage = language
 
     if let snapshot {
       publishWidgetSnapshot(

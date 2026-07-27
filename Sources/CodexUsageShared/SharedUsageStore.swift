@@ -63,3 +63,67 @@ public struct SharedUsageStore {
     try data.write(to: fileURL, options: [.atomic])
   }
 }
+
+public struct SharedWidgetPreferences: Codable, Equatable, Sendable {
+  public let languageCode: String
+
+  public init(languageCode: String) {
+    self.languageCode = languageCode
+  }
+}
+
+public struct SharedWidgetPreferencesStore {
+  private static let fileName = "widget-preferences.json"
+
+  private let fileURL: URL?
+  private let appGroupIdentifier: String?
+
+  public init(
+    appGroupIdentifier: String =
+      SharedUsageConfiguration.appGroupIdentifier()
+  ) {
+    self.appGroupIdentifier = appGroupIdentifier
+    fileURL = FileManager.default
+      .containerURL(
+        forSecurityApplicationGroupIdentifier: appGroupIdentifier
+      )?
+      .appendingPathComponent(Self.fileName, isDirectory: false)
+  }
+
+  public init(directoryURL: URL) {
+    appGroupIdentifier = nil
+    fileURL = directoryURL.appendingPathComponent(
+      Self.fileName,
+      isDirectory: false
+    )
+  }
+
+  public func load() -> SharedWidgetPreferences? {
+    guard
+      let fileURL,
+      let data = try? Data(contentsOf: fileURL)
+    else {
+      return nil
+    }
+    return try? JSONDecoder().decode(
+      SharedWidgetPreferences.self,
+      from: data
+    )
+  }
+
+  public func save(_ preferences: SharedWidgetPreferences) throws {
+    guard let fileURL else {
+      throw SharedUsageStoreError.appGroupUnavailable(
+        appGroupIdentifier
+          ?? SharedUsageConfiguration.fallbackAppGroupIdentifier
+      )
+    }
+
+    try FileManager.default.createDirectory(
+      at: fileURL.deletingLastPathComponent(),
+      withIntermediateDirectories: true
+    )
+    let data = try JSONEncoder().encode(preferences)
+    try data.write(to: fileURL, options: [.atomic])
+  }
+}

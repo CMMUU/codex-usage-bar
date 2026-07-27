@@ -5,11 +5,26 @@ import WidgetKit
 private struct UsageTimelineEntry: TimelineEntry {
   let date: Date
   let snapshot: SharedUsageSnapshot?
+  let languageCode: String?
+
+  init(
+    date: Date,
+    snapshot: SharedUsageSnapshot?,
+    languageCode: String? = nil
+  ) {
+    self.date = date
+    self.snapshot = snapshot
+    self.languageCode = languageCode
+  }
 }
 
 private struct UsageTimelineProvider: TimelineProvider {
   private let appGroupStore = SharedUsageStore()
   private let widgetCacheStore = SharedUsageStore(
+    directoryURL: Self.widgetCacheDirectory
+  )
+  private let appGroupPreferencesStore = SharedWidgetPreferencesStore()
+  private let widgetPreferencesCacheStore = SharedWidgetPreferencesStore(
     directoryURL: Self.widgetCacheDirectory
   )
   private let localClient = LocalUsageSnapshotClient()
@@ -26,11 +41,12 @@ private struct UsageTimelineProvider: TimelineProvider {
       completion(UsageTimelineEntry(date: Date(), snapshot: .placeholder))
       return
     }
-    loadSnapshot { snapshot in
+    loadSnapshot { snapshot, languageCode in
       completion(
         UsageTimelineEntry(
           date: Date(),
-          snapshot: snapshot
+          snapshot: snapshot,
+          languageCode: languageCode
         )
       )
     }
@@ -40,9 +56,13 @@ private struct UsageTimelineProvider: TimelineProvider {
     in context: Context,
     completion: @escaping (Timeline<UsageTimelineEntry>) -> Void
   ) {
-    loadSnapshot { snapshot in
+    loadSnapshot { snapshot, languageCode in
       let now = Date()
-      let entry = UsageTimelineEntry(date: now, snapshot: snapshot)
+      let entry = UsageTimelineEntry(
+        date: now,
+        snapshot: snapshot,
+        languageCode: languageCode
+      )
       let routineRefresh = now.addingTimeInterval(15 * 60)
       let refreshDate =
         snapshot?.resetsAt.map {
@@ -56,20 +76,37 @@ private struct UsageTimelineProvider: TimelineProvider {
   }
 
   private func loadSnapshot(
-    completion: @escaping (SharedUsageSnapshot?) -> Void
+    completion: @escaping (SharedUsageSnapshot?, String?) -> Void
   ) {
+    let sharedLanguageCode =
+      appGroupPreferencesStore.load()?.languageCode
+
     if let snapshot = appGroupStore.load() {
-      completion(snapshot)
+      completion(
+        snapshot,
+        sharedLanguageCode ?? snapshot.languageCode
+      )
       return
     }
 
-    localClient.load { snapshot in
-      if let snapshot {
-        try? widgetCacheStore.save(snapshot)
-        completion(snapshot)
-      } else {
-        completion(widgetCacheStore.load())
+    localClient.loadPayload { payload in
+      let snapshot = payload?.snapshot ?? widgetCacheStore.load()
+      let languageCode =
+        payload?.languageCode
+        ?? sharedLanguageCode
+        ?? widgetPreferencesCacheStore.load()?.languageCode
+        ?? snapshot?.languageCode
+
+      if let networkSnapshot = payload?.snapshot {
+        try? widgetCacheStore.save(networkSnapshot)
       }
+      if let languageCode {
+        try? widgetPreferencesCacheStore.save(
+          SharedWidgetPreferences(languageCode: languageCode)
+        )
+      }
+
+      completion(snapshot, languageCode)
     }
   }
 
@@ -90,7 +127,9 @@ private struct UsageWidgetView: View {
   let entry: UsageTimelineEntry
 
   private var language: AppLanguage {
-    AppLanguage.resolve(entry.snapshot?.languageCode)
+    AppLanguage.resolve(
+      entry.languageCode ?? entry.snapshot?.languageCode
+    )
   }
 
   var body: some View {
@@ -329,7 +368,9 @@ extension SharedUsageSnapshot {
 }
 
 struct CodexUsageWidget: Widget {
-  private let language = AppLanguage.systemDefault
+  private let language = AppLanguage.resolve(
+    SharedWidgetPreferencesStore().load()?.languageCode
+  )
 
   var body: some WidgetConfiguration {
     StaticConfiguration(

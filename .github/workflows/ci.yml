@@ -45,7 +45,7 @@ jobs:
 
       - name: Build universal app, widget, and DMG
         env:
-          VERSION: 0.2.1
+          VERSION: 0.2.2
           BUILD_NUMBER: ${{ github.run_number }}
         run: make release-package
 
@@ -55,7 +55,7 @@ jobs:
           WIDGET="$APP/Contents/PlugIns/CodexUsageWidget.appex"
           ICON="$APP/Contents/Resources/AppIcon.icns"
           SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
-          DMG="dist/Codex-Usage-Bar-v0.2.1-universal.dmg"
+          DMG="dist/Codex-Usage-Bar-v0.2.2-universal.dmg"
           WIDGET_ENTITLEMENTS="$RUNNER_TEMP/widget-entitlements.plist"
 
           test -d "$WIDGET"

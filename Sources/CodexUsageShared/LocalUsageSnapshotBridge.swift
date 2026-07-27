@@ -8,6 +8,19 @@ public enum LocalUsageSnapshotBridgeConfiguration {
   public static let connectionTimeout: TimeInterval = 0.75
 }
 
+public struct LocalUsageSnapshotPayload: Codable, Equatable, Sendable {
+  public let snapshot: SharedUsageSnapshot?
+  public let languageCode: String?
+
+  public init(
+    snapshot: SharedUsageSnapshot?,
+    languageCode: String?
+  ) {
+    self.snapshot = snapshot
+    self.languageCode = languageCode
+  }
+}
+
 public final class LocalUsageSnapshotServer: @unchecked Sendable {
   private let ports: [NWEndpoint.Port]
   private let queue = DispatchQueue(
@@ -16,6 +29,7 @@ public final class LocalUsageSnapshotServer: @unchecked Sendable {
   private let snapshotLock = NSLock()
 
   private var snapshot: SharedUsageSnapshot?
+  private var languageCode: String?
   private var listener: NWListener?
   private var connections: [ObjectIdentifier: NWConnection] = [:]
   private var nextPortIndex = 0
@@ -56,6 +70,13 @@ public final class LocalUsageSnapshotServer: @unchecked Sendable {
   public func update(_ snapshot: SharedUsageSnapshot) {
     snapshotLock.lock()
     self.snapshot = snapshot
+    languageCode = snapshot.languageCode ?? languageCode
+    snapshotLock.unlock()
+  }
+
+  public func updateLanguage(_ languageCode: String) {
+    snapshotLock.lock()
+    self.languageCode = languageCode
     snapshotLock.unlock()
   }
 
@@ -136,11 +157,25 @@ public final class LocalUsageSnapshotServer: @unchecked Sendable {
   ) {
     snapshotLock.lock()
     let snapshot = self.snapshot
+    let languageCode = self.languageCode
     snapshotLock.unlock()
 
+    let data: Data?
+    if let snapshot {
+      data = try? JSONEncoder().encode(snapshot)
+    } else if let languageCode {
+      data = try? JSONEncoder().encode(
+        LocalUsageSnapshotPayload(
+          snapshot: nil,
+          languageCode: languageCode
+        )
+      )
+    } else {
+      data = nil
+    }
+
     guard
-      let snapshot,
-      let data = try? JSONEncoder().encode(snapshot),
+      let data,
       data.count <= LocalUsageSnapshotBridgeConfiguration.maximumPayloadSize
     else {
       finish(connection, identifier: identifier)
@@ -191,6 +226,14 @@ public final class LocalUsageSnapshotClient: @unchecked Sendable {
   public func load(
     completion: @escaping (SharedUsageSnapshot?) -> Void
   ) {
+    loadPayload { payload in
+      completion(payload?.snapshot)
+    }
+  }
+
+  public func loadPayload(
+    completion: @escaping (LocalUsageSnapshotPayload?) -> Void
+  ) {
     queue.async {
       self.attempt(portIndex: 0, completion: completion)
     }
@@ -198,7 +241,7 @@ public final class LocalUsageSnapshotClient: @unchecked Sendable {
 
   private func attempt(
     portIndex: Int,
-    completion: @escaping (SharedUsageSnapshot?) -> Void
+    completion: @escaping (LocalUsageSnapshotPayload?) -> Void
   ) {
     guard portIndex < ports.count else {
       completion(nil)
@@ -214,15 +257,15 @@ public final class LocalUsageSnapshotClient: @unchecked Sendable {
     )
     var completed = false
 
-    func finish(_ snapshot: SharedUsageSnapshot?) {
+    func finish(_ payload: LocalUsageSnapshotPayload?) {
       guard !completed else {
         return
       }
       completed = true
       connection.stateUpdateHandler = nil
       connection.cancel()
-      if let snapshot {
-        completion(snapshot)
+      if let payload {
+        completion(payload)
       } else {
         attempt(portIndex: portIndex + 1, completion: completion)
       }
@@ -236,13 +279,22 @@ public final class LocalUsageSnapshotClient: @unchecked Sendable {
           maximumLength:
             LocalUsageSnapshotBridgeConfiguration.maximumPayloadSize
         ) { data, _, _, _ in
-          let snapshot = data.flatMap {
-            try? JSONDecoder().decode(
+          let payload = data.flatMap { data in
+            if let snapshot = try? JSONDecoder().decode(
               SharedUsageSnapshot.self,
-              from: $0
+              from: data
+            ) {
+              return LocalUsageSnapshotPayload(
+                snapshot: snapshot,
+                languageCode: snapshot.languageCode
+              )
+            }
+            return try? JSONDecoder().decode(
+              LocalUsageSnapshotPayload.self,
+              from: data
             )
           }
-          finish(snapshot)
+          finish(payload)
         }
       case .failed, .cancelled:
         finish(nil)

@@ -216,6 +216,18 @@ struct CodexUsageVerifier {
       "共享快照保留 Widget 语言"
     )
 
+    let preferencesStore = SharedWidgetPreferencesStore(
+      directoryURL: temporaryDirectory
+    )
+    let preferences = SharedWidgetPreferences(
+      languageCode: AppLanguage.english.rawValue
+    )
+    try preferencesStore.save(preferences)
+    try expect(
+      preferencesStore.load() == preferences,
+      "独立持久化 Widget 语言设置"
+    )
+
     let legacySnapshotData = try JSONSerialization.data(
       withJSONObject: [
         "usedPercent": 25,
@@ -315,6 +327,28 @@ struct CodexUsageVerifier {
       }
     }
     try expect(received == expected, "本机回环同步 Widget 快照")
+
+    let languagePorts = [basePort + 10, basePort + 11, basePort + 12]
+    let languageServer = LocalUsageSnapshotServer(ports: languagePorts)
+    languageServer.updateLanguage(AppLanguage.simplifiedChinese.rawValue)
+    languageServer.start()
+    defer {
+      languageServer.stop()
+    }
+
+    try await Task.sleep(nanoseconds: 150_000_000)
+    let languageClient = LocalUsageSnapshotClient(ports: languagePorts)
+    let languagePayload = await withCheckedContinuation { continuation in
+      languageClient.loadPayload { payload in
+        continuation.resume(returning: payload)
+      }
+    }
+    try expect(
+      languagePayload?.snapshot == nil
+        && languagePayload?.languageCode
+          == AppLanguage.simplifiedChinese.rawValue,
+      "无用量快照时同步 Widget 语言设置"
+    )
   }
 
   private static func decodeRateLimits(_ json: String) throws -> RateLimitsReadResult {
