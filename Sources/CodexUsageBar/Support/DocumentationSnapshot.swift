@@ -1,12 +1,20 @@
 import AppKit
+import CodexUsageShared
 import SwiftUI
 
 @MainActor
 enum DocumentationSnapshot {
-  static func render(viewModel: UsageViewModel, to path: String) throws {
-    let content = UsageMenuView(viewModel: viewModel)
-      .background(Color(nsColor: .windowBackgroundColor))
-      .environment(\.colorScheme, .light)
+  static func render(
+    viewModel: UsageViewModel,
+    language: AppLanguage,
+    to path: String
+  ) throws {
+    let content = UsageMenuView(
+      viewModel: viewModel,
+      language: .constant(language)
+    )
+    .background(Color(nsColor: .windowBackgroundColor))
+    .environment(\.colorScheme, .light)
 
     let renderer = ImageRenderer(content: content)
     renderer.scale = 2

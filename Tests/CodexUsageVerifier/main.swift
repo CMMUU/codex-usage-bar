@@ -142,6 +142,7 @@ struct CodexUsageVerifier {
 
     try verifyExecutableOverride()
     try verifySharedUsageStore()
+    try verifyAppLanguage()
   }
 
   private static func runIntegrationCheck() async throws {
@@ -195,7 +196,8 @@ struct CodexUsageVerifier {
       resetsAt: updatedAt.addingTimeInterval(3_600),
       planType: "pro",
       limitName: "Codex",
-      updatedAt: updatedAt
+      updatedAt: updatedAt,
+      languageCode: AppLanguage.english.rawValue
     )
     try expect(snapshot.usedPercent == 100, "共享快照限制使用率范围")
     try expect(snapshot.remainingPercent == 0, "共享快照计算剩余额度")
@@ -209,6 +211,71 @@ struct CodexUsageVerifier {
     let store = SharedUsageStore(directoryURL: temporaryDirectory)
     try store.save(snapshot)
     try expect(store.load() == snapshot, "共享快照原子写入与读取")
+    try expect(
+      store.load()?.languageCode == AppLanguage.english.rawValue,
+      "共享快照保留 Widget 语言"
+    )
+
+    let legacySnapshotData = try JSONSerialization.data(
+      withJSONObject: [
+        "usedPercent": 25,
+        "updatedAt": updatedAt.timeIntervalSinceReferenceDate,
+      ]
+    )
+    let legacySnapshot = try JSONDecoder().decode(
+      SharedUsageSnapshot.self,
+      from: legacySnapshotData
+    )
+    try expect(
+      legacySnapshot.languageCode == nil,
+      "兼容不含语言字段的旧 Widget 快照"
+    )
+  }
+
+  private static func verifyAppLanguage() throws {
+    let defaultsSuite = "CodexUsageVerifier.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: defaultsSuite) else {
+      throw VerificationFailure("创建语言偏好测试存储")
+    }
+    defer {
+      defaults.removePersistentDomain(forName: defaultsSuite)
+    }
+    defaults.set(AppLanguage.english.rawValue, forKey: AppLanguage.storageKey)
+
+    try expect(
+      AppLanguage.resolve("zh-Hans") == .simplifiedChinese,
+      "恢复已保存的中文选择"
+    )
+    try expect(
+      AppLanguage.resolve("en") == .english,
+      "恢复已保存的英文选择"
+    )
+    try expect(
+      AppLanguage.resolve(
+        defaults.string(forKey: AppLanguage.storageKey)
+      ) == .english,
+      "持久化用户语言选择"
+    )
+    try expect(
+      AppLanguage.simplifiedChinese.toggled == .english
+        && AppLanguage.english.toggled == .simplifiedChinese,
+      "中英文切换可逆"
+    )
+    try expect(
+      AppLanguage.simplifiedChinese.text(.weeklyUsed) == "本周已用"
+        && AppLanguage.english.text(.weeklyUsed) == "Used this week",
+      "提供中英文界面文案"
+    )
+    try expect(
+      AppLanguage.english.localizedErrorMessage("读取 Codex 限额超时")
+        == "Timed out while reading the Codex limit",
+      "切换英文错误提示"
+    )
+    try expect(
+      AppLanguage.english.widgetWaitingTitle == "Waiting for usage data"
+        && AppLanguage.simplifiedChinese.widgetWaitingTitle == "等待用量数据",
+      "提供中英文 Widget 文案"
+    )
   }
 
   private static func verifyLocalSnapshotBridge() async throws {
@@ -220,7 +287,8 @@ struct CodexUsageVerifier {
       resetsAt: updatedAt.addingTimeInterval(3_600),
       planType: "pro",
       limitName: "Codex",
-      updatedAt: updatedAt
+      updatedAt: updatedAt,
+      languageCode: AppLanguage.english.rawValue
     )
     let server = LocalUsageSnapshotServer(ports: ports)
     server.update(expected)

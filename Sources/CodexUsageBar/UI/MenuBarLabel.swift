@@ -1,7 +1,9 @@
+import CodexUsageShared
 import SwiftUI
 
 struct MenuBarLabel: View {
   @ObservedObject var viewModel: UsageViewModel
+  let language: AppLanguage
 
   var body: some View {
     HStack(spacing: 4) {
@@ -9,7 +11,7 @@ struct MenuBarLabel: View {
       Text(viewModel.menuBarText)
         .monospacedDigit()
     }
-    .accessibilityLabel("Codex 周限额")
+    .accessibilityLabel(language.text(.menuBarAccessibility))
     .accessibilityValue(viewModel.menuBarText)
   }
 }

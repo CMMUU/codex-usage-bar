@@ -89,6 +89,10 @@ private struct UsageWidgetView: View {
 
   let entry: UsageTimelineEntry
 
+  private var language: AppLanguage {
+    AppLanguage.resolve(entry.snapshot?.languageCode)
+  }
+
   var body: some View {
     Group {
       if let snapshot = entry.snapshot {
@@ -103,6 +107,7 @@ private struct UsageWidgetView: View {
       }
     }
     .modifier(WidgetBackgroundModifier())
+    .environment(\.locale, language.locale)
     .accessibilityElement(children: .combine)
   }
 
@@ -118,7 +123,7 @@ private struct UsageWidgetView: View {
         usageRing(snapshot)
 
         VStack(alignment: .leading, spacing: 4) {
-          Text("剩余")
+          Text(language.text(.remainingQuota))
             .font(.caption)
             .foregroundStyle(.secondary)
           Text(percentText(snapshot.remainingPercent))
@@ -146,9 +151,18 @@ private struct UsageWidgetView: View {
       Divider()
 
       VStack(alignment: .leading, spacing: 10) {
-        metricRow("本周已用", percentText(snapshot.usedPercent))
-        metricRow("剩余额度", percentText(snapshot.remainingPercent))
-        metricRow("重置时间", resetDisplayText(snapshot.resetsAt))
+        metricRow(
+          language.text(.weeklyUsed),
+          percentText(snapshot.usedPercent)
+        )
+        metricRow(
+          language.text(.remainingQuota),
+          percentText(snapshot.remainingPercent)
+        )
+        metricRow(
+          language.text(.resetTime),
+          language.resetDisplayText(snapshot.resetsAt)
+        )
 
         Spacer(minLength: 0)
 
@@ -168,9 +182,9 @@ private struct UsageWidgetView: View {
 
       Spacer()
 
-      Text("等待用量数据")
+      Text(language.widgetWaitingTitle)
         .font(.title3.weight(.semibold))
-      Text("打开 Codex Usage Bar 完成首次刷新")
+      Text(language.widgetWaitingBody)
         .font(.caption)
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
@@ -188,7 +202,7 @@ private struct UsageWidgetView: View {
       if snapshot.isStale() {
         Image(systemName: "clock.badge.exclamationmark")
           .foregroundStyle(.orange)
-          .help("数据需要刷新")
+          .help(language.widgetStaleHelp)
       } else {
         Circle()
           .fill(progressColor(snapshot.usedPercent))
@@ -215,13 +229,13 @@ private struct UsageWidgetView: View {
         Text(percentText(snapshot.usedPercent))
           .font(.system(size: 22, weight: .bold, design: .rounded))
           .monospacedDigit()
-        Text("已用")
+        Text(language.widgetUsedText)
           .font(.caption2)
           .foregroundStyle(.secondary)
       }
     }
     .frame(width: 82, height: 82)
-    .accessibilityLabel("本周已用")
+    .accessibilityLabel(language.text(.weeklyUsed))
     .accessibilityValue(percentText(snapshot.usedPercent))
   }
 
@@ -230,7 +244,7 @@ private struct UsageWidgetView: View {
   ) -> some View {
     HStack(spacing: 5) {
       Image(systemName: "arrow.clockwise")
-      Text("重置 \(resetDisplayText(snapshot.resetsAt))")
+      Text(language.widgetResetText(snapshot.resetsAt))
     }
     .font(.caption2)
     .foregroundStyle(.secondary)
@@ -264,30 +278,13 @@ private struct UsageWidgetView: View {
     "\(Int(value.rounded()))%"
   }
 
-  private func resetDisplayText(_ date: Date?) -> String {
-    guard let date else {
-      return "未知"
-    }
-    return date.formatted(
-      .dateTime
-        .month(.defaultDigits)
-        .day()
-        .hour()
-        .minute()
-        .locale(Locale(identifier: "zh_CN"))
-    )
-  }
-
   private func updatedText(
     _ snapshot: SharedUsageSnapshot
   ) -> String {
-    let time = snapshot.updatedAt.formatted(
-      .dateTime
-        .hour()
-        .minute()
-        .locale(Locale(identifier: "zh_CN"))
+    language.widgetUpdatedText(
+      snapshot.updatedAt,
+      isStale: snapshot.isStale()
     )
-    return snapshot.isStale() ? "上次更新 \(time) · 待刷新" : "更新于 \(time)"
   }
 }
 
@@ -326,11 +323,14 @@ extension SharedUsageSnapshot {
     resetsAt: Date().addingTimeInterval(3 * 24 * 60 * 60),
     planType: "pro",
     limitName: "Codex",
-    updatedAt: Date()
+    updatedAt: Date(),
+    languageCode: AppLanguage.systemDefault.rawValue
   )
 }
 
 struct CodexUsageWidget: Widget {
+  private let language = AppLanguage.systemDefault
+
   var body: some WidgetConfiguration {
     StaticConfiguration(
       kind: SharedUsageConfiguration.widgetKind,
@@ -338,8 +338,8 @@ struct CodexUsageWidget: Widget {
     ) { entry in
       UsageWidgetView(entry: entry)
     }
-    .configurationDisplayName("Codex 周限额")
-    .description("快速查看本周已用比例、剩余额度与重置时间。")
+    .configurationDisplayName(language.widgetDisplayName)
+    .description(language.widgetDescription)
     .supportedFamilies([.systemSmall, .systemMedium])
   }
 }

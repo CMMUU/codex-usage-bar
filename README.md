@@ -30,6 +30,7 @@ or storing your authentication token.
 - Automatic refresh every five minutes
 - Manual refresh
 - Launch at login
+- Simplified Chinese and English switch shared by the popover and widgets
 - Native SwiftUI menu bar interface
 - Native WidgetKit widgets for the desktop and Notification Center
 - Small and medium widget layouts with stale-data indication

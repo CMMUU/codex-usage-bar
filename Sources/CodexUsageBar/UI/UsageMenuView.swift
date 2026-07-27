@@ -1,15 +1,17 @@
 import AppKit
+import CodexUsageShared
 import SwiftUI
 
 struct UsageMenuView: View {
   @ObservedObject var viewModel: UsageViewModel
+  @Binding var language: AppLanguage
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       header
       usageSection
 
-      if let errorMessage = viewModel.errorMessage {
+      if let errorMessage = viewModel.errorDisplayText(for: language) {
         errorPanel(errorMessage)
       }
 
@@ -20,6 +22,7 @@ struct UsageMenuView: View {
     }
     .padding(18)
     .frame(width: 340)
+    .environment(\.locale, language.locale)
     .task {
       await viewModel.refreshIfStale()
     }
@@ -30,17 +33,21 @@ struct UsageMenuView: View {
       VStack(alignment: .leading, spacing: 3) {
         Text("CODEX")
           .font(.system(size: 18, weight: .bold, design: .rounded))
-        Text("周限额使用情况")
+        Text(language.text(.subtitle))
           .font(.caption)
           .foregroundStyle(.secondary)
       }
 
       Spacer()
 
-      if viewModel.isRefreshing {
-        ProgressView()
-          .controlSize(.small)
-          .accessibilityLabel("正在刷新")
+      HStack(spacing: 10) {
+        if viewModel.isRefreshing {
+          ProgressView()
+            .controlSize(.small)
+            .accessibilityLabel(language.text(.refreshing))
+        }
+
+        LanguageSwitcher(language: $language)
       }
     }
   }
@@ -48,7 +55,7 @@ struct UsageMenuView: View {
   private var usageSection: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(alignment: .firstTextBaseline) {
-        Text("本周已用")
+        Text(language.text(.weeklyUsed))
           .font(.headline)
         Spacer()
         Text(percentText(viewModel.snapshot?.usedPercent))
@@ -60,11 +67,11 @@ struct UsageMenuView: View {
         value: viewModel.snapshot?.usedPercent ?? 0,
         color: progressColor
       )
-      .accessibilityLabel("本周已用")
+      .accessibilityLabel(language.text(.weeklyUsed))
       .accessibilityValue(percentText(viewModel.snapshot?.usedPercent))
 
       HStack {
-        Text("剩余额度")
+        Text(language.text(.remainingQuota))
           .foregroundStyle(.secondary)
         Spacer()
         Text(percentText(viewModel.snapshot?.remainingPercent))
@@ -77,12 +84,21 @@ struct UsageMenuView: View {
 
   private var detailsSection: some View {
     VStack(spacing: 9) {
-      detailRow("重置时间", value: viewModel.resetDisplayText)
-      detailRow("当前套餐", value: viewModel.planDisplayName)
-      detailRow("刷新时间", value: viewModel.lastUpdatedDisplayText)
+      detailRow(
+        language.text(.resetTime),
+        value: viewModel.resetDisplayText(for: language)
+      )
+      detailRow(
+        language.text(.currentPlan),
+        value: viewModel.planDisplayName(for: language)
+      )
+      detailRow(
+        language.text(.refreshTime),
+        value: viewModel.lastUpdatedDisplayText(for: language)
+      )
 
       if let limitName = viewModel.snapshot?.limitName, !limitName.isEmpty {
-        detailRow("限额类型", value: limitName)
+        detailRow(language.text(.limitType), value: limitName)
       }
     }
     .font(.subheadline)
@@ -96,20 +112,20 @@ struct UsageMenuView: View {
             await viewModel.refresh()
           }
         } label: {
-          Label("立即刷新", systemImage: "arrow.clockwise")
+          Label(language.text(.refreshNow), systemImage: "arrow.clockwise")
         }
         .disabled(viewModel.isRefreshing)
 
         Spacer()
 
-        Button("退出") {
+        Button(language.text(.quit)) {
           NSApplication.shared.terminate(nil)
         }
         .keyboardShortcut("q")
       }
 
       Toggle(
-        "登录时启动",
+        language.text(.launchAtLogin),
         isOn: Binding(
           get: { viewModel.launchAtLoginEnabled },
           set: { viewModel.setLaunchAtLogin($0) }
@@ -117,7 +133,9 @@ struct UsageMenuView: View {
       )
       .toggleStyle(CompactSwitchToggleStyle())
 
-      if let launchAtLoginError = viewModel.launchAtLoginError {
+      if let launchAtLoginError =
+        viewModel.launchAtLoginErrorText(for: language)
+      {
         Text(launchAtLoginError)
           .font(.caption)
           .foregroundStyle(.red)
@@ -167,6 +185,60 @@ struct UsageMenuView: View {
       return "--"
     }
     return "\(Int(value.rounded()))%"
+  }
+}
+
+private struct LanguageSwitcher: View {
+  @Binding var language: AppLanguage
+
+  var body: some View {
+    HStack(spacing: 2) {
+      languageButton(
+        title: "中",
+        value: .simplifiedChinese,
+        accessibilityLabel: "中文"
+      )
+      languageButton(
+        title: "EN",
+        value: .english,
+        accessibilityLabel: "English"
+      )
+    }
+    .padding(2)
+    .background(
+      .secondary.opacity(0.12),
+      in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+    )
+    .accessibilityElement(children: .contain)
+    .accessibilityLabel(language.text(.languagePicker))
+  }
+
+  private func languageButton(
+    title: String,
+    value: AppLanguage,
+    accessibilityLabel: String
+  ) -> some View {
+    Button {
+      language = value
+    } label: {
+      Text(title)
+        .font(.system(size: 10, weight: .semibold, design: .rounded))
+        .foregroundStyle(language == value ? .primary : .secondary)
+        .frame(width: 32, height: 20)
+        .background(
+          language == value
+            ? Color(nsColor: .controlBackgroundColor)
+            : .clear,
+          in: RoundedRectangle(cornerRadius: 5, style: .continuous)
+        )
+        .shadow(
+          color: language == value ? .black.opacity(0.12) : .clear,
+          radius: 1,
+          y: 1
+        )
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(accessibilityLabel)
   }
 }
 

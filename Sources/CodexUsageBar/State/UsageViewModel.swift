@@ -12,22 +12,25 @@ final class UsageViewModel: ObservableObject {
   @Published private(set) var errorMessage: String?
   @Published private(set) var lastUpdated: Date?
   @Published private(set) var launchAtLoginEnabled = false
-  @Published private(set) var launchAtLoginError: String?
+  @Published private(set) var launchAtLoginErrorDetails: String?
 
   private let client: CodexAppServerClient
   private let sharedUsageStore: SharedUsageStore
   private let localUsageServer: LocalUsageSnapshotServer
+  private var displayLanguage: AppLanguage
   private var activated = false
   private var refreshLoop: Task<Void, Never>?
 
   init(
     client: CodexAppServerClient = CodexAppServerClient(),
     sharedUsageStore: SharedUsageStore = SharedUsageStore(),
-    localUsageServer: LocalUsageSnapshotServer = LocalUsageSnapshotServer()
+    localUsageServer: LocalUsageSnapshotServer = LocalUsageSnapshotServer(),
+    displayLanguage: AppLanguage = .systemDefault
   ) {
     self.client = client
     self.sharedUsageStore = sharedUsageStore
     self.localUsageServer = localUsageServer
+    self.displayLanguage = displayLanguage
   }
 
   deinit {
@@ -42,25 +45,50 @@ final class UsageViewModel: ObservableObject {
     return isRefreshing ? "Codex …" : "Codex --"
   }
 
-  var planDisplayName: String {
+  func planDisplayName(for language: AppLanguage) -> String {
     guard let plan = snapshot?.planType, !plan.isEmpty else {
-      return "未知"
+      return language.text(.unknown)
     }
     return plan.prefix(1).uppercased() + plan.dropFirst()
   }
 
-  var resetDisplayText: String {
-    guard let resetDate = snapshot?.resetsAt else {
-      return "未知"
-    }
-    return Self.resetDateFormatter.string(from: resetDate)
+  func resetDisplayText(for language: AppLanguage) -> String {
+    language.resetDisplayText(snapshot?.resetsAt)
   }
 
-  var lastUpdatedDisplayText: String {
-    guard let lastUpdated else {
-      return "尚未刷新"
+  func lastUpdatedDisplayText(for language: AppLanguage) -> String {
+    language.lastUpdatedDisplayText(lastUpdated)
+  }
+
+  func errorDisplayText(for language: AppLanguage) -> String? {
+    errorMessage.map(language.localizedErrorMessage)
+  }
+
+  func launchAtLoginErrorText(for language: AppLanguage) -> String? {
+    guard let launchAtLoginErrorDetails else {
+      return nil
     }
-    return Self.lastUpdatedFormatter.string(from: lastUpdated)
+    return
+      "\(language.text(.launchAtLoginUpdateFailed)): "
+      + launchAtLoginErrorDetails
+  }
+
+  func setDisplayLanguage(_ language: AppLanguage) {
+    guard displayLanguage != language else {
+      return
+    }
+    displayLanguage = language
+
+    if let snapshot {
+      publishWidgetSnapshot(
+        snapshot,
+        updatedAt: lastUpdated ?? Date()
+      )
+    } else {
+      WidgetCenter.shared.reloadTimelines(
+        ofKind: SharedUsageConfiguration.widgetKind
+      )
+    }
   }
 
   func activate() async {
@@ -106,7 +134,7 @@ final class UsageViewModel: ObservableObject {
   }
 
   func setLaunchAtLogin(_ enabled: Bool) {
-    launchAtLoginError = nil
+    launchAtLoginErrorDetails = nil
 
     do {
       if enabled {
@@ -115,7 +143,7 @@ final class UsageViewModel: ObservableObject {
         try SMAppService.mainApp.unregister()
       }
     } catch {
-      launchAtLoginError = "更新登录启动设置失败：\(error.localizedDescription)"
+      launchAtLoginErrorDetails = error.localizedDescription
     }
 
     refreshLaunchAtLoginStatus()
@@ -188,7 +216,8 @@ final class UsageViewModel: ObservableObject {
       resetsAt: snapshot.resetsAt,
       planType: snapshot.planType,
       limitName: snapshot.limitName,
-      updatedAt: updatedAt
+      updatedAt: updatedAt,
+      languageCode: displayLanguage.rawValue
     )
 
     localUsageServer.update(sharedSnapshot)
@@ -202,17 +231,4 @@ final class UsageViewModel: ObservableObject {
     )
   }
 
-  private static let resetDateFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "zh_CN")
-    formatter.dateFormat = "M月d日 HH:mm"
-    return formatter
-  }()
-
-  private static let lastUpdatedFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "zh_CN")
-    formatter.dateFormat = "HH:mm:ss"
-    return formatter
-  }()
 }
