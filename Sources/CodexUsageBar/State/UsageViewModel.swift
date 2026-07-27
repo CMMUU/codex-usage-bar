@@ -1,7 +1,9 @@
 import CodexUsageCore
+import CodexUsageShared
 import Combine
 import Foundation
 import ServiceManagement
+import WidgetKit
 
 @MainActor
 final class UsageViewModel: ObservableObject {
@@ -13,11 +15,16 @@ final class UsageViewModel: ObservableObject {
   @Published private(set) var launchAtLoginError: String?
 
   private let client: CodexAppServerClient
+  private let sharedUsageStore: SharedUsageStore
   private var activated = false
   private var refreshLoop: Task<Void, Never>?
 
-  init(client: CodexAppServerClient = CodexAppServerClient()) {
+  init(
+    client: CodexAppServerClient = CodexAppServerClient(),
+    sharedUsageStore: SharedUsageStore = SharedUsageStore()
+  ) {
     self.client = client
+    self.sharedUsageStore = sharedUsageStore
   }
 
   deinit {
@@ -80,9 +87,12 @@ final class UsageViewModel: ObservableObject {
     }
 
     do {
-      snapshot = try await client.fetchUsage()
-      lastUpdated = Date()
+      let fetchedSnapshot = try await client.fetchUsage()
+      let updatedAt = Date()
+      snapshot = fetchedSnapshot
+      lastUpdated = updatedAt
       errorMessage = nil
+      publishWidgetSnapshot(fetchedSnapshot, updatedAt: updatedAt)
     } catch {
       errorMessage =
         (error as? LocalizedError)?.errorDescription
@@ -162,6 +172,28 @@ final class UsageViewModel: ObservableObject {
 
   private func refreshLaunchAtLoginStatus() {
     launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
+  }
+
+  private func publishWidgetSnapshot(
+    _ snapshot: UsageSnapshot,
+    updatedAt: Date
+  ) {
+    let sharedSnapshot = SharedUsageSnapshot(
+      usedPercent: snapshot.usedPercent,
+      resetsAt: snapshot.resetsAt,
+      planType: snapshot.planType,
+      limitName: snapshot.limitName,
+      updatedAt: updatedAt
+    )
+
+    do {
+      try sharedUsageStore.save(sharedSnapshot)
+      WidgetCenter.shared.reloadTimelines(
+        ofKind: SharedUsageConfiguration.widgetKind
+      )
+    } catch {
+      fputs("Widget snapshot update failed: \(error)\n", stderr)
+    }
   }
 
   private static let resetDateFormatter: DateFormatter = {

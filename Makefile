@@ -1,4 +1,4 @@
-.PHONY: build test integration-test package run docs-screenshot public-release-check web-check web-dev web-deploy clean
+.PHONY: build test integration-test widget-build xcode-project package dmg release-package run docs-screenshot public-release-check web-check web-dev web-deploy clean
 
 build:
 	swift build
@@ -9,8 +9,20 @@ test:
 integration-test:
 	swift run CodexUsageVerifier --integration
 
+widget-build:
+	swift build --product CodexUsageWidget
+
+xcode-project:
+	./Scripts/generate-project.sh
+
 package:
 	./Scripts/package.sh
+
+dmg: package
+	./Scripts/create_dmg.sh
+
+release-package:
+	./Scripts/release_package.sh
 
 run: package
 	open "dist/Codex Usage Bar.app"
