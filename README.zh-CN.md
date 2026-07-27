@@ -7,6 +7,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5_Mode-F05138?logo=swift&logoColor=white)](https://www.swift.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+[项目官网](https://codex-usage-bar.1690414955.workers.dev/) ·
+[最新版本](https://github.com/CMMUU/codex-usage-bar/releases/latest) ·
 [English](README.md)
 
 Codex 让开发者保持心流，但查看剩余用量仍然需要中断当前操作：打开左下角账户菜单，再进入
@@ -105,6 +107,8 @@ make integration-test
 make package
 make docs-screenshot
 make public-release-check
+make web-check
+make web-deploy
 ```
 
 验证器覆盖：
@@ -115,6 +119,9 @@ make public-release-check
 - 异常百分比边界
 - Codex 路径覆盖
 - 可选的本机实时集成测试
+
+官网位于 `web/`，由 Cloudflare Worker 提供静态页面和 GitHub
+Release 查询接口。下载按钮始终指向 GitHub，不在 Cloudflare 保存安装包。
 
 ## 参与贡献
 

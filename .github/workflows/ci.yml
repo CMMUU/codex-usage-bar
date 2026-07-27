@@ -43,3 +43,34 @@ jobs:
 
       - name: Check public-release boundaries
         run: make public-release-check
+
+  website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install website dependencies
+        run: npm ci
+
+      - name: Check Worker and frontend scripts
+        run: npm run check
+
+      - name: Run Worker tests
+        run: npm test
+
+      - name: Validate Worker bundle
+        run: npx wrangler deploy --dry-run

@@ -7,7 +7,14 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-IGNORED_PARTS = {".git", ".build", "dist", ".swiftpm"}
+IGNORED_PARTS = {
+    ".git",
+    ".build",
+    ".swiftpm",
+    ".wrangler",
+    "dist",
+    "node_modules",
+}
 IGNORED_SUFFIXES = {
     ".a",
     ".dylib",

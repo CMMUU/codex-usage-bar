@@ -7,6 +7,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5_Mode-F05138?logo=swift&logoColor=white)](https://www.swift.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+[Website](https://codex-usage-bar.1690414955.workers.dev/) ·
+[Latest release](https://github.com/CMMUU/codex-usage-bar/releases/latest) ·
 [中文文档](README.zh-CN.md)
 
 Codex helps developers stay in flow, but checking remaining usage still takes
@@ -121,6 +123,10 @@ make docs-screenshot
 
 # Check the repository for local paths and credential patterns
 make public-release-check
+
+# Check or deploy the Cloudflare Worker website
+make web-check
+make web-deploy
 ```
 
 The verification executable covers:
@@ -140,6 +146,10 @@ Sources/
 └── CodexUsageCore/      # Codex protocol client and usage selection
 Tests/
 └── CodexUsageVerifier/  # Dependency-free verification executable
+web/
+├── public/              # Cyberpunk-inspired static landing page
+├── src/                 # Cloudflare Worker release endpoint
+└── test/                # Worker normalization tests
 ```
 
 ## Contributing

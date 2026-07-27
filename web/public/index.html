@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Codex Usage Bar puts your Codex weekly usage, remaining quota, and reset time directly in the macOS menu bar."
+    >
+    <meta name="theme-color" content="#07090f">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Codex Usage Bar">
+    <meta
+      property="og:url"
+      content="https://codex-usage-bar.1690414955.workers.dev/"
+    >
+    <meta
+      property="og:description"
+      content="Your Codex weekly limit, one glance away."
+    >
+    <meta
+      property="og:image"
+      content="https://codex-usage-bar.1690414955.workers.dev/assets/usage-popover.png"
+    >
+    <meta name="twitter:card" content="summary_large_image">
+    <title>Codex Usage Bar — Your weekly limit at a glance</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Codex Usage Bar home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span>CODEX <b>USAGE</b></span>
+      </a>
+      <nav class="header-actions" aria-label="Primary navigation">
+        <button class="language-toggle" id="language-toggle" type="button">
+          中文
+        </button>
+        <a
+          class="github-link"
+          href="https://github.com/CMMUU/codex-usage-bar"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 .7a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.28-5.27-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.47.11-3.05 0 0 .97-.31 3.16 1.18a10.9 10.9 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.58.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.71 5.38-5.29 5.67.42.36.79 1.06.79 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/>
+          </svg>
+          GitHub
+        </a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span class="pulse-dot"></span>
+            <span data-copy="eyebrow">Native macOS menu bar utility</span>
+          </div>
+          <h1>
+            <span data-copy="headlineOne">Your Codex limit.</span>
+            <span class="accent-text" data-copy="headlineTwo">One glance away.</span>
+          </h1>
+          <p class="hero-description" data-copy="heroDescription">
+            Stop digging through account menus. See weekly usage, remaining
+            quota, and reset time directly from your menu bar.
+          </p>
+          <div class="hero-actions">
+            <a
+              class="primary-button"
+              id="download-button"
+              href="https://github.com/CMMUU/codex-usage-bar/releases/latest"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14"/>
+              </svg>
+              <span data-copy="download">Get for macOS</span>
+            </a>
+            <a
+              class="secondary-button"
+              href="https://github.com/CMMUU/codex-usage-bar"
+              target="_blank"
+              rel="noreferrer"
+              data-copy="source"
+            >
+              View source
+            </a>
+          </div>
+          <div class="release-line" aria-live="polite">
+            <span id="release-version">v0.1.0</span>
+            <span class="release-separator"></span>
+            <span data-copy="requirements">macOS 13+ · Apple Silicon</span>
+            <span class="release-separator"></span>
+            <span data-copy="license">MIT licensed</span>
+          </div>
+        </div>
+
+        <div class="product-stage" aria-label="Codex Usage Bar preview">
+          <div class="stage-orbit orbit-one" aria-hidden="true"></div>
+          <div class="stage-orbit orbit-two" aria-hidden="true"></div>
+          <div class="menu-bar-fragment" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span class="menu-status">⌁ Codex 64%</span>
+          </div>
+          <figure class="app-preview">
+            <div class="preview-topline">
+              <span>LIVE / WEEKLY LIMIT</span>
+              <span class="signal-bars"><i></i><i></i><i></i></span>
+            </div>
+            <img
+              src="/assets/usage-popover.png"
+              width="680"
+              height="730"
+              alt="Codex Usage Bar showing weekly usage and remaining quota"
+            >
+            <div class="scan-line" aria-hidden="true"></div>
+          </figure>
+          <div class="stage-label label-left" aria-hidden="true">01 / LOCAL</div>
+          <div class="stage-label label-right" aria-hidden="true">STATUS / ONLINE</div>
+        </div>
+      </section>
+
+      <section class="feature-strip" aria-label="Highlights">
+        <article>
+          <span class="feature-number">01</span>
+          <div>
+            <h2 data-copy="featureOneTitle">Instant visibility</h2>
+            <p data-copy="featureOneBody">Weekly usage and reset time, without breaking your flow.</p>
+          </div>
+        </article>
+        <article>
+          <span class="feature-number">02</span>
+          <div>
+            <h2 data-copy="featureTwoTitle">Local by design</h2>
+            <p data-copy="featureTwoBody">Talks to your local Codex app-server. No copied tokens.</p>
+          </div>
+        </article>
+        <article>
+          <span class="feature-number">03</span>
+          <div>
+            <h2 data-copy="featureThreeTitle">Quietly native</h2>
+            <p data-copy="featureThreeBody">A lightweight SwiftUI companion built for the macOS menu bar.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="story-section">
+        <div class="section-kicker">WHY / 00</div>
+        <div class="story-grid">
+          <h2 data-copy="storyTitle">Stay in flow.<br>Keep usage in sight.</h2>
+          <div class="story-copy">
+            <p data-copy="storyBody">
+              Checking Codex usage used to mean opening the account menu, then
+              opening usage details. This tiny app turns that repeated detour
+              into a single click.
+            </p>
+            <div class="workflow" aria-label="Workflow comparison">
+              <div>
+                <span data-copy="before">BEFORE</span>
+                <strong data-copy="beforeFlow">Profile → Usage → Limits</strong>
+              </div>
+              <svg aria-hidden="true" viewBox="0 0 64 24">
+                <path d="M2 12h56m-7-7 7 7-7 7"/>
+              </svg>
+              <div class="workflow-now">
+                <span data-copy="now">NOW</span>
+                <strong data-copy="nowFlow">One glance</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="open-source-card">
+        <div class="open-source-glow" aria-hidden="true"></div>
+        <div>
+          <span class="section-kicker">OPEN SOURCE / MIT</span>
+          <h2 data-copy="openTitle">Small tool. Open code.</h2>
+          <p data-copy="openBody">
+            Inspect how it works, report an issue, or shape the next release.
+          </p>
+        </div>
+        <a
+          href="https://github.com/CMMUU/codex-usage-bar"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span data-copy="openButton">Explore on GitHub</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M5 12h14m-5-5 5 5-5 5"/>
+          </svg>
+        </a>
+      </section>
+    </main>
+
+    <footer>
+      <span>CODEX USAGE BAR</span>
+      <p data-copy="footer">Built to keep creators in flow.</p>
+      <span>© 2026 CMMUU</span>
+    </footer>
+  </body>
+</html>

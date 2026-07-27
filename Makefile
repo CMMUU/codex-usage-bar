@@ -1,4 +1,4 @@
-.PHONY: build test integration-test package run docs-screenshot public-release-check clean
+.PHONY: build test integration-test package run docs-screenshot public-release-check web-check web-dev web-deploy clean
 
 build:
 	swift build
@@ -20,6 +20,15 @@ docs-screenshot:
 
 public-release-check:
 	python3 Scripts/public_release_check.py
+
+web-check:
+	cd web && npm run check && npm test && npx wrangler deploy --dry-run
+
+web-dev:
+	cd web && npm run dev
+
+web-deploy:
+	cd web && npm run deploy
 
 clean:
 	swift package clean
