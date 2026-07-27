@@ -63,6 +63,8 @@ const translations = {
     footer: "Built to keep creators in flow.",
     downloadAsset: "Download {version}",
     downloadRelease: "Get {version} on GitHub",
+    downloadLatest: "Get latest on GitHub",
+    latestVersion: "Latest",
     themeAuto: "Follow system",
     themeLight: "Light",
     themeDark: "Dark",
@@ -121,6 +123,8 @@ const translations = {
     footer: "为保持创造者专注而生。",
     downloadAsset: "下载 {version}",
     downloadRelease: "在 GitHub 获取 {version}",
+    downloadLatest: "在 GitHub 获取最新版本",
+    latestVersion: "最新版本",
     themeAuto: "跟随系统",
     themeLight: "浅色",
     themeDark: "深色",
@@ -150,11 +154,14 @@ const themeLabel = document.querySelector("#theme-label");
 const downloadButton = document.querySelector("#download-button");
 const releaseVersion = document.querySelector("#release-version");
 const systemTheme = matchMedia("(prefers-color-scheme: light)");
+const releaseRefreshInterval = 60_000;
 
 let currentLocale =
   localStorage.getItem("codex-usage-locale")
   ?? (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en");
 let currentRelease = null;
+let releaseRequestInFlight = null;
+let lastReleaseCheckAt = 0;
 let currentPopoverLocale = currentLocale;
 let currentWidgetLocale = currentLocale;
 let currentThemePreference =
@@ -288,8 +295,19 @@ function applyWidgetLocale(locale) {
 }
 
 function updateDownloadCopy() {
-  if (!currentRelease) return;
+  if (!currentRelease) {
+    releaseVersion.textContent = translations[currentLocale].latestVersion;
+    return;
+  }
+
   const version = currentRelease.tagName ?? "latest";
+  if (currentRelease.source === "fallback" || version === "latest") {
+    downloadButton.querySelector("span").textContent =
+      translations[currentLocale].downloadLatest;
+    releaseVersion.textContent = translations[currentLocale].latestVersion;
+    return;
+  }
+
   const key =
     currentRelease.downloadKind === "asset"
       ? "downloadAsset"
@@ -298,22 +316,46 @@ function updateDownloadCopy() {
     translations[currentLocale][key].replace("{version}", version);
 }
 
-async function loadLatestRelease() {
+async function loadLatestRelease(force = false) {
+  const now = Date.now();
+  if (!force && now - lastReleaseCheckAt < releaseRefreshInterval) {
+    return;
+  }
+  if (releaseRequestInFlight) {
+    return releaseRequestInFlight;
+  }
+
+  lastReleaseCheckAt = now;
+  releaseRequestInFlight = (async () => {
+    try {
+      const response = await fetch("/api/release", {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return;
+
+      const release = await response.json();
+      if (!release?.downloadUrl || !release?.tagName) return;
+
+      currentRelease = release;
+      downloadButton.href = release.downloadUrl;
+      releaseVersion.textContent = release.tagName;
+      updateDownloadCopy();
+    } catch {
+      // Static GitHub fallback remains available when the release API is offline.
+    }
+  })();
+
   try {
-    const response = await fetch("/api/release", {
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) return;
+    await releaseRequestInFlight;
+  } finally {
+    releaseRequestInFlight = null;
+  }
+}
 
-    const release = await response.json();
-    if (!release?.downloadUrl || !release?.tagName) return;
-
-    currentRelease = release;
-    downloadButton.href = release.downloadUrl;
-    releaseVersion.textContent = release.tagName;
-    updateDownloadCopy();
-  } catch {
-    // Static GitHub fallback remains available when the release API is offline.
+function refreshReleaseWhenPageIsActive() {
+  if (document.visibilityState === "visible") {
+    void loadLatestRelease();
   }
 }
 
@@ -349,6 +391,10 @@ systemTheme.addEventListener("change", () => {
   }
 });
 
+document.addEventListener("visibilitychange", refreshReleaseWhenPageIsActive);
+window.addEventListener("focus", refreshReleaseWhenPageIsActive);
+window.addEventListener("pageshow", refreshReleaseWhenPageIsActive);
+
 applyThemePreference(currentThemePreference);
 applyLocale(currentLocale);
-loadLatestRelease();
+void loadLatestRelease(true);

@@ -43,6 +43,17 @@ test("selectMacDownloadAsset ignores checksum files", () => {
   assert.equal(asset.browser_download_url, "https://example.com/app.zip");
 });
 
+test("normalizeRelease uses the current published fallback", () => {
+  const release = normalizeRelease(null);
+
+  assert.equal(release.tagName, "latest");
+  assert.equal(release.name, "Latest release");
+  assert.equal(
+    release.downloadUrl,
+    "https://github.com/CMMUU/codex-usage-bar/releases/latest",
+  );
+});
+
 test("normalizeRelease returns a GitHub asset when one exists", () => {
   const release = normalizeRelease({
     tag_name: "v0.2.0",

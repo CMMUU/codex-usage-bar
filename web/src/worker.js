@@ -3,8 +3,8 @@ const GITHUB_REPOSITORY = "codex-usage-bar";
 const GITHUB_RELEASE_API =
   `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/releases/latest`;
 const RELEASE_FALLBACK = {
-  tagName: "v0.1.0",
-  name: "Codex Usage Bar v0.1.0",
+  tagName: "latest",
+  name: "Latest release",
   publishedAt: null,
   downloadUrl:
     `https://github.com/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/releases/latest`,
@@ -15,8 +15,10 @@ const RELEASE_FALLBACK = {
     `https://github.com/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/releases/latest`,
 };
 
+const RELEASE_CACHE_TTL_SECONDS = 300;
+
 const JSON_HEADERS = {
-  "Cache-Control": "public, max-age=300, s-maxage=900, stale-while-revalidate=86400",
+  "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=300",
   "Content-Type": "application/json; charset=utf-8",
   "X-Content-Type-Options": "nosniff",
 };
@@ -78,16 +80,16 @@ export function normalizeRelease(release) {
 
 async function getLatestRelease(request, context) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/release", request.url), {
-    method: "GET",
-  });
+  const cacheURL = new URL("/api/release", request.url);
+  const cacheBucket = Math.floor(
+    Date.now() / (RELEASE_CACHE_TTL_SECONDS * 1_000),
+  );
+  cacheURL.searchParams.set("bucket", String(cacheBucket));
+  const cacheKey = new Request(cacheURL, { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) {
     return cached;
   }
-
-  let payload = RELEASE_FALLBACK;
-  let source = "fallback";
 
   try {
     const response = await fetch(GITHUB_RELEASE_API, {
@@ -99,19 +101,26 @@ async function getLatestRelease(request, context) {
     });
 
     if (response.ok) {
-      payload = normalizeRelease(await response.json());
-      source = "github";
+      const releaseResponse = Response.json(
+        { ...normalizeRelease(await response.json()), source: "github" },
+        { headers: JSON_HEADERS },
+      );
+      context.waitUntil(cache.put(cacheKey, releaseResponse.clone()));
+      return releaseResponse;
     }
   } catch {
-    // A stable fallback keeps the download path usable during GitHub API outages.
+    // Fall through to a non-cached response while GitHub is unavailable.
   }
 
-  const response = Response.json(
-    { ...payload, source },
-    { headers: JSON_HEADERS },
+  return Response.json(
+    { ...RELEASE_FALLBACK, source: "fallback" },
+    {
+      headers: {
+        ...JSON_HEADERS,
+        "Cache-Control": "no-store",
+      },
+    },
   );
-  context.waitUntil(cache.put(cacheKey, response.clone()));
-  return response;
 }
 
 export default {
