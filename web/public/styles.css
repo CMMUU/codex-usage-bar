@@ -23,6 +23,23 @@
   text-rendering: optimizeLegibility;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f7f5;
+  --bg-soft: #edf2ef;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-strong: #ffffff;
+  --line: rgba(13, 27, 31, 0.12);
+  --line-bright: rgba(0, 125, 135, 0.3);
+  --text: #12171c;
+  --muted: #606a75;
+  --cyan: #007e88;
+  --cyan-strong: #00a7b0;
+  --violet: #7657c7;
+  --pink: #bd397f;
+  --lime: #4e8b08;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -41,6 +58,9 @@ body {
     var(--bg);
   background-size: 48px 48px;
   color: var(--text);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
 body::before {
@@ -109,6 +129,66 @@ a:focus-visible {
   background: var(--violet);
 }
 
+:root[data-theme="light"] body {
+  background:
+    linear-gradient(rgba(13, 27, 31, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 27, 31, 0.04) 1px, transparent 1px),
+    var(--bg);
+}
+
+:root[data-theme="light"] body::before {
+  border-color: rgba(13, 27, 31, 0.04);
+}
+
+:root[data-theme="light"] .ambient {
+  opacity: 0.1;
+}
+
+:root[data-theme="light"] .github-link {
+  color: #323b45;
+}
+
+:root[data-theme="light"] .eyebrow {
+  background: rgba(0, 126, 136, 0.045);
+  color: #4d5863;
+}
+
+:root[data-theme="light"] .hero-description,
+:root[data-theme="light"] .story-copy > p {
+  color: #56616c;
+}
+
+:root[data-theme="light"] .secondary-button {
+  border-color: rgba(13, 27, 31, 0.13);
+  background: rgba(13, 27, 31, 0.025);
+  color: #28313a;
+}
+
+:root[data-theme="light"] .release-line,
+:root[data-theme="light"] .stage-label {
+  color: #69747e;
+}
+
+:root[data-theme="light"] .release-separator {
+  background: #9aa3aa;
+}
+
+:root[data-theme="light"] .workflow span {
+  color: #737d86;
+}
+
+:root[data-theme="light"] .workflow strong {
+  color: #424d58;
+}
+
+:root[data-theme="light"] .workflow svg {
+  stroke: #8c969e;
+}
+
+:root[data-theme="light"] footer {
+  color: #6e7881;
+}
+
 .site-header {
   position: relative;
   z-index: 10;
@@ -164,7 +244,8 @@ a:focus-visible {
   gap: 24px;
 }
 
-.language-toggle {
+.language-toggle,
+.theme-toggle {
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -173,8 +254,37 @@ a:focus-visible {
   letter-spacing: 0.08em;
 }
 
-.language-toggle:hover {
+.language-toggle:hover,
+.theme-toggle:hover {
   color: var(--cyan);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  min-width: 78px;
+  padding: 8px 0;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.theme-toggle svg {
+  width: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: square;
+  stroke-width: 1.45;
+  transition: transform 220ms ease;
+}
+
+.theme-toggle[data-preference="light"] svg {
+  color: #c27d00;
+  transform: rotate(35deg);
+}
+
+.theme-toggle[data-preference="dark"] svg {
+  color: var(--violet);
+  transform: rotate(-25deg);
 }
 
 .github-link {
@@ -838,7 +948,23 @@ footer span:last-child {
   }
 
   .header-actions {
-    gap: 14px;
+    gap: 11px;
+  }
+
+  .theme-toggle {
+    min-width: auto;
+    padding-inline: 4px;
+  }
+
+  .theme-toggle span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .github-link {
@@ -877,6 +1003,7 @@ footer span:last-child {
 
   .product-stage {
     min-height: 480px;
+    overflow: hidden;
   }
 
   .app-preview {

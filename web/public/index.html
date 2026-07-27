@@ -12,7 +12,7 @@
     <meta property="og:title" content="Codex Usage Bar">
     <meta
       property="og:url"
-      content="https://codex-usage-bar.1690414955.workers.dev/"
+      content="https://codex.cmmuu.com/"
     >
     <meta
       property="og:description"
@@ -20,11 +20,12 @@
     >
     <meta
       property="og:image"
-      content="https://codex-usage-bar.1690414955.workers.dev/assets/usage-popover.png"
+      content="https://codex.cmmuu.com/assets/usage-popover.png"
     >
     <meta name="twitter:card" content="summary_large_image">
     <title>Codex Usage Bar — Your weekly limit at a glance</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <script src="/theme-bootstrap.js"></script>
     <link rel="stylesheet" href="/styles.css">
     <script src="/app.js" type="module"></script>
   </head>
@@ -41,6 +42,13 @@
         <span>CODEX <b>USAGE</b></span>
       </a>
       <nav class="header-actions" aria-label="Primary navigation">
+        <button class="theme-toggle" id="theme-toggle" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3.75"></circle>
+            <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.28 5.28 6.7 6.7M17.3 17.3l1.42 1.42M18.72 5.28 17.3 6.7M6.7 17.3l-1.42 1.42"></path>
+          </svg>
+          <span id="theme-label">AUTO</span>
+        </button>
         <button class="language-toggle" id="language-toggle" type="button">
           中文
         </button>

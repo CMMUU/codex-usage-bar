@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://codex-usage-bar.1690414955.workers.dev/sitemap.xml
+Sitemap: https://codex.cmmuu.com/sitemap.xml

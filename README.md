@@ -7,7 +7,7 @@
 [![Swift](https://img.shields.io/badge/Swift-5_Mode-F05138?logo=swift&logoColor=white)](https://www.swift.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[Website](https://codex-usage-bar.1690414955.workers.dev/) ·
+[Website](https://codex.cmmuu.com/) ·
 [Latest release](https://github.com/CMMUU/codex-usage-bar/releases/latest) ·
 [中文文档](README.zh-CN.md)
 

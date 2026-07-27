@@ -32,6 +32,9 @@ const translations = {
     footer: "Built to keep creators in flow.",
     downloadAsset: "Download {version}",
     downloadRelease: "Get {version} on GitHub",
+    themeAuto: "Follow system",
+    themeLight: "Light",
+    themeDark: "Dark",
   },
   zh: {
     eyebrow: "原生 macOS 菜单栏工具",
@@ -62,18 +65,80 @@ const translations = {
     footer: "为保持创造者专注而生。",
     downloadAsset: "下载 {version}",
     downloadRelease: "在 GitHub 获取 {version}",
+    themeAuto: "跟随系统",
+    themeLight: "浅色",
+    themeDark: "深色",
   },
 };
 
+const themeStorageKey = "codex-usage-theme";
+const themePreferences = ["auto", "light", "dark"];
 const copyNodes = document.querySelectorAll("[data-copy]");
 const languageButton = document.querySelector("#language-toggle");
+const themeButton = document.querySelector("#theme-toggle");
+const themeLabel = document.querySelector("#theme-label");
 const downloadButton = document.querySelector("#download-button");
 const releaseVersion = document.querySelector("#release-version");
+const systemTheme = matchMedia("(prefers-color-scheme: light)");
 
 let currentLocale =
   localStorage.getItem("codex-usage-locale")
   ?? (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en");
 let currentRelease = null;
+let currentThemePreference =
+  document.documentElement.dataset.themePreference ?? "auto";
+
+function saveThemePreference(preference) {
+  try {
+    if (preference === "auto") {
+      localStorage.removeItem(themeStorageKey);
+    } else {
+      localStorage.setItem(themeStorageKey, preference);
+    }
+  } catch {
+    // Theme changes still apply for the current page when storage is unavailable.
+  }
+}
+
+function updateThemeControl() {
+  const key =
+    currentThemePreference === "light"
+      ? "themeLight"
+      : currentThemePreference === "dark"
+        ? "themeDark"
+        : "themeAuto";
+  const label = translations[currentLocale][key];
+  themeLabel.textContent = label;
+  themeButton.title = label;
+  themeButton.setAttribute("aria-label", `${label} — ${translations[currentLocale].themeAuto}`);
+  themeButton.dataset.preference = currentThemePreference;
+}
+
+function applyThemePreference(preference, persist = false) {
+  currentThemePreference = themePreferences.includes(preference)
+    ? preference
+    : "auto";
+  const effectiveTheme =
+    currentThemePreference === "auto"
+      ? systemTheme.matches
+        ? "light"
+        : "dark"
+      : currentThemePreference;
+
+  document.documentElement.dataset.theme = effectiveTheme;
+  document.documentElement.dataset.themePreference = currentThemePreference;
+  document.documentElement.style.colorScheme = effectiveTheme;
+
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) {
+    themeColor.content = effectiveTheme === "light" ? "#f4f7f5" : "#07090f";
+  }
+
+  if (persist) {
+    saveThemePreference(currentThemePreference);
+  }
+  updateThemeControl();
+}
 
 function applyLocale(locale) {
   currentLocale = locale;
@@ -102,6 +167,7 @@ function applyLocale(locale) {
   languageButton.textContent = locale === "zh" ? "EN" : "中文";
   localStorage.setItem("codex-usage-locale", locale);
   updateDownloadCopy();
+  updateThemeControl();
 }
 
 function updateDownloadCopy() {
@@ -138,5 +204,19 @@ languageButton.addEventListener("click", () => {
   applyLocale(currentLocale === "zh" ? "en" : "zh");
 });
 
+themeButton.addEventListener("click", () => {
+  const currentIndex = themePreferences.indexOf(currentThemePreference);
+  const nextPreference =
+    themePreferences[(currentIndex + 1) % themePreferences.length];
+  applyThemePreference(nextPreference, true);
+});
+
+systemTheme.addEventListener("change", () => {
+  if (currentThemePreference === "auto") {
+    applyThemePreference("auto");
+  }
+});
+
+applyThemePreference(currentThemePreference);
 applyLocale(currentLocale);
 loadLatestRelease();

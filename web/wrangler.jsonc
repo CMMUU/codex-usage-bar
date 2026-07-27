@@ -5,6 +5,12 @@
   "compatibility_date": "2026-07-27",
   "workers_dev": true,
   "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "codex.cmmuu.com",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": true
   },

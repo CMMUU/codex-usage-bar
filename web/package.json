@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check src/worker.js && node --check public/app.js",
+    "check": "node --check src/worker.js && node --check public/theme-bootstrap.js && node --check public/app.js",
     "test": "node --test test/*.test.js",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"
