@@ -69,7 +69,7 @@ jobs:
           codesign -d --entitlements :- "$WIDGET" \
             >"$WIDGET_ENTITLEMENTS"
           test "$(
-            plutil -extract com.apple.security.network.client raw \
+            plutil -extract 'com\.apple\.security\.network\.client' raw \
               "$WIDGET_ENTITLEMENTS"
           )" = "true"
           test "$(
