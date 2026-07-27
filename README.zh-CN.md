@@ -170,6 +170,10 @@ Release 查询接口。下载按钮始终指向 GitHub，不在 Cloudflare 保�
 - 改进多账号和多限额展示
 - 自定义刷新间隔
 
+## 社区
+
+- [LINUX DO](https://linux.do/) — 感谢社区提供技术交流与开源分享的空间。
+
 ## 许可证
 
 [MIT](LICENSE)

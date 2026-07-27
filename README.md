@@ -212,6 +212,10 @@ opening a public issue.
 - Improved multi-account and multi-limit presentation
 - User-configurable refresh interval
 
+## Community
+
+- [LINUX DO](https://linux.do/) — a community for technical discussion and open-source sharing.
+
 ## License
 
 [MIT](LICENSE)
