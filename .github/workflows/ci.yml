@@ -67,7 +67,10 @@ jobs:
             | grep -q "universal binary"
           file "$WIDGET/Contents/MacOS/CodexUsageWidget" \
             | grep -q "universal binary"
-          shasum -a 256 -c "$DMG.sha256"
+          (
+            cd dist
+            shasum -a 256 -c "$(basename "$DMG").sha256"
+          )
 
       - name: Check public-release boundaries
         run: make public-release-check

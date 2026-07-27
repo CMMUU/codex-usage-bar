@@ -125,7 +125,10 @@ jobs:
           codesign --verify --verbose=2 "$DMG"
           xcrun stapler validate "$DMG"
           spctl --assess --type execute --verbose=2 "$APP"
-          shasum -a 256 -c "$DMG.sha256"
+          (
+            cd dist
+            shasum -a 256 -c "$(basename "$DMG").sha256"
+          )
           test -d "$WIDGET"
 
       - name: Generate build provenance
