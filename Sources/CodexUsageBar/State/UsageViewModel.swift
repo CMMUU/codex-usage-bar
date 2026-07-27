@@ -16,19 +16,23 @@ final class UsageViewModel: ObservableObject {
 
   private let client: CodexAppServerClient
   private let sharedUsageStore: SharedUsageStore
+  private let localUsageServer: LocalUsageSnapshotServer
   private var activated = false
   private var refreshLoop: Task<Void, Never>?
 
   init(
     client: CodexAppServerClient = CodexAppServerClient(),
-    sharedUsageStore: SharedUsageStore = SharedUsageStore()
+    sharedUsageStore: SharedUsageStore = SharedUsageStore(),
+    localUsageServer: LocalUsageSnapshotServer = LocalUsageSnapshotServer()
   ) {
     self.client = client
     self.sharedUsageStore = sharedUsageStore
+    self.localUsageServer = localUsageServer
   }
 
   deinit {
     refreshLoop?.cancel()
+    localUsageServer.stop()
   }
 
   var menuBarText: String {
@@ -64,6 +68,7 @@ final class UsageViewModel: ObservableObject {
       return
     }
     activated = true
+    localUsageServer.start()
     refreshLaunchAtLoginStatus()
     await refresh()
     startRefreshLoop()
@@ -186,14 +191,15 @@ final class UsageViewModel: ObservableObject {
       updatedAt: updatedAt
     )
 
+    localUsageServer.update(sharedSnapshot)
     do {
       try sharedUsageStore.save(sharedSnapshot)
-      WidgetCenter.shared.reloadTimelines(
-        ofKind: SharedUsageConfiguration.widgetKind
-      )
     } catch {
       fputs("Widget snapshot update failed: \(error)\n", stderr)
     }
+    WidgetCenter.shared.reloadTimelines(
+      ofKind: SharedUsageConfiguration.widgetKind
+    )
   }
 
   private static let resetDateFormatter: DateFormatter = {

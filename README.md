@@ -103,7 +103,7 @@ flowchart LR
     B --> D["account/rateLimits/read"]
     D --> E["Select seven-day window"]
     E --> F["SwiftUI MenuBarExtra"]
-    F --> G["App Group snapshot"]
+    F --> G["App Group or loopback snapshot"]
     G --> H["WidgetKit timeline"]
 ```
 
@@ -123,10 +123,13 @@ Codex Usage Bar:
 - does not read browser cookies
 - does not send analytics
 - does not call undocumented ChatGPT HTTP endpoints directly
+- limits the widget fallback bridge to the local loopback interface
 
 It delegates authentication and token refresh to the locally installed Codex
 app-server. The app writes only the normalized usage percentage, reset time,
-plan label, and update time to its private App Group container for the widget.
+plan label, and update time to its private App Group container. In ad-hoc
+builds, the widget reads the same sanitized snapshot over local loopback
+without transferring authentication data.
 
 ## Development
 

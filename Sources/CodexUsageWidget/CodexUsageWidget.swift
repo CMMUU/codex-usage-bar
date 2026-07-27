@@ -8,7 +8,11 @@ private struct UsageTimelineEntry: TimelineEntry {
 }
 
 private struct UsageTimelineProvider: TimelineProvider {
-  private let store = SharedUsageStore()
+  private let appGroupStore = SharedUsageStore()
+  private let widgetCacheStore = SharedUsageStore(
+    directoryURL: Self.widgetCacheDirectory
+  )
+  private let localClient = LocalUsageSnapshotClient()
 
   func placeholder(in context: Context) -> UsageTimelineEntry {
     UsageTimelineEntry(date: Date(), snapshot: .placeholder)
@@ -18,31 +22,66 @@ private struct UsageTimelineProvider: TimelineProvider {
     in context: Context,
     completion: @escaping (UsageTimelineEntry) -> Void
   ) {
-    completion(
-      UsageTimelineEntry(
-        date: Date(),
-        snapshot: context.isPreview ? .placeholder : store.load()
+    if context.isPreview {
+      completion(UsageTimelineEntry(date: Date(), snapshot: .placeholder))
+      return
+    }
+    loadSnapshot { snapshot in
+      completion(
+        UsageTimelineEntry(
+          date: Date(),
+          snapshot: snapshot
+        )
       )
-    )
+    }
   }
 
   func getTimeline(
     in context: Context,
     completion: @escaping (Timeline<UsageTimelineEntry>) -> Void
   ) {
-    let now = Date()
-    let snapshot = store.load()
-    let entry = UsageTimelineEntry(date: now, snapshot: snapshot)
-    let routineRefresh = now.addingTimeInterval(15 * 60)
-    let refreshDate =
-      snapshot?.resetsAt.map {
-        min(routineRefresh, max(now.addingTimeInterval(60), $0))
-      } ?? routineRefresh
+    loadSnapshot { snapshot in
+      let now = Date()
+      let entry = UsageTimelineEntry(date: now, snapshot: snapshot)
+      let routineRefresh = now.addingTimeInterval(15 * 60)
+      let refreshDate =
+        snapshot?.resetsAt.map {
+          min(routineRefresh, max(now.addingTimeInterval(60), $0))
+        } ?? routineRefresh
 
-    completion(
-      Timeline(entries: [entry], policy: .after(refreshDate))
-    )
+      completion(
+        Timeline(entries: [entry], policy: .after(refreshDate))
+      )
+    }
   }
+
+  private func loadSnapshot(
+    completion: @escaping (SharedUsageSnapshot?) -> Void
+  ) {
+    if let snapshot = appGroupStore.load() {
+      completion(snapshot)
+      return
+    }
+
+    localClient.load { snapshot in
+      if let snapshot {
+        try? widgetCacheStore.save(snapshot)
+        completion(snapshot)
+      } else {
+        completion(widgetCacheStore.load())
+      }
+    }
+  }
+
+  private static let widgetCacheDirectory =
+    FileManager.default.urls(
+      for: .applicationSupportDirectory,
+      in: .userDomainMask
+    )[0]
+    .appendingPathComponent(
+      "CodexUsageWidget",
+      isDirectory: true
+    )
 }
 
 private struct UsageWidgetView: View {

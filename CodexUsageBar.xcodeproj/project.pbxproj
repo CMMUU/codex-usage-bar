@@ -11,6 +11,8 @@
 		118A4F7CB169754091C560AE /* CodexUsageBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCE3BE4C8AEFD6DBBEDDE34 /* CodexUsageBarApp.swift */; };
 		1D455EC2C019C40DACA5FD1A /* CodexAppServerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B766DA68E8BCCD5AEB83F11 /* CodexAppServerClient.swift */; };
 		272F2E3A48F89C9FEA53F25E /* libCodexUsageCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B62E6AACDE388B3D9F68AC13 /* libCodexUsageCore.a */; };
+		378B8A41218266EAF060B76C /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A06D789516C01E0E027B38FF /* AppIcon.icns */; };
+		3EB9B8473461E84AC7D12573 /* LocalUsageSnapshotBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */; };
 		478AE62507861F4B424B3782 /* UsageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5964387CC7B9C1338680606C /* UsageViewModel.swift */; };
 		4E30216F25E52DFB4694ACC5 /* SharedUsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */; };
 		4F97F18AEBE689EDF3988B6F /* DocumentationSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ECB92954168A746830981F /* DocumentationSnapshot.swift */; };
@@ -81,8 +83,10 @@
 		715B1A9DFACEDD913D307D75 /* MenuBarLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabel.swift; sourceTree = "<group>"; };
 		7FCE3BE4C8AEFD6DBBEDDE34 /* CodexUsageBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageBarApp.swift; sourceTree = "<group>"; };
 		966E4F72C09CBA6C5B7D1914 /* UsageMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMenuView.swift; sourceTree = "<group>"; };
+		A06D789516C01E0E027B38FF /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		B62E6AACDE388B3D9F68AC13 /* libCodexUsageCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCodexUsageCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUsageStore.swift; sourceTree = "<group>"; };
+		CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalUsageSnapshotBridge.swift; sourceTree = "<group>"; };
 		E9F0D22719518AF71134EA29 /* CodexUsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexUsageBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F87E3021DF7F9A701E8FDA81 /* CodexUsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageWidget.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -178,6 +182,7 @@
 		869892A46C75427198B75028 /* CodexUsageShared */ = {
 			isa = PBXGroup;
 			children = (
+				CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */,
 				0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */,
 				C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */,
 			);
@@ -192,6 +197,7 @@
 				3DCFC54A4209EA636D892F8D /* CodexUsageCore */,
 				869892A46C75427198B75028 /* CodexUsageShared */,
 				535F7E6361475182A9D8A17A /* CodexUsageWidget */,
+				DFA8153210895938D302CD5A /* Resources */,
 				377B31B3676ED56A7EC16088 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -203,6 +209,14 @@
 				966E4F72C09CBA6C5B7D1914 /* UsageMenuView.swift */,
 			);
 			path = UI;
+			sourceTree = "<group>";
+		};
+		DFA8153210895938D302CD5A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A06D789516C01E0E027B38FF /* AppIcon.icns */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -249,6 +263,7 @@
 			buildConfigurationList = 4AD163DF70F4505C27539272 /* Build configuration list for PBXNativeTarget "CodexUsageBar" */;
 			buildPhases = (
 				94DB258D14024131C76D36ED /* Sources */,
+				E25A1CF7131D084274B5959F /* Resources */,
 				99F3146536123B2B7CBDAD7F /* Frameworks */,
 				2F727D17846CDA9F8B0B3A33 /* Embed Foundation Extensions */,
 			);
@@ -324,6 +339,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		E25A1CF7131D084274B5959F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				378B8A41218266EAF060B76C /* AppIcon.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXShellScriptBuildPhase section */
 		7CAAEFBFB494BDDC16B5502C /* Copy Swift Objective-C Interface Header */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -364,6 +390,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EB9B8473461E84AC7D12573 /* LocalUsageSnapshotBridge.swift in Sources */,
 				4E30216F25E52DFB4694ACC5 /* SharedUsageSnapshot.swift in Sources */,
 				551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */,
 			);
@@ -485,7 +512,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -506,7 +533,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -684,7 +711,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -699,7 +726,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

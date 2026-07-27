@@ -141,7 +141,9 @@ jobs:
         run: |
           APP="dist/Codex Usage Bar.app"
           WIDGET="$APP/Contents/PlugIns/CodexUsageWidget.appex"
+          ICON="$APP/Contents/Resources/AppIcon.icns"
           DMG="dist/Codex-Usage-Bar-v$VERSION-universal.dmg"
+          WIDGET_ENTITLEMENTS="$RUNNER_TEMP/widget-entitlements.plist"
 
           codesign --verify --deep --strict --verbose=2 "$APP"
           (
@@ -149,6 +151,16 @@ jobs:
             shasum -a 256 -c "$(basename "$DMG").sha256"
           )
           test -d "$WIDGET"
+          test -f "$ICON"
+          codesign -d --entitlements :- "$WIDGET" \
+            >"$WIDGET_ENTITLEMENTS"
+          test "$(
+            plutil -extract com.apple.security.network.client raw \
+              "$WIDGET_ENTITLEMENTS"
+          )" = "true"
+          test "$(
+            plutil -extract CFBundleIconFile raw "$APP/Contents/Info.plist"
+          )" = "AppIcon.icns"
 
           if [[ "$SIGNING_MODE" == "developer-id" ]]; then
             codesign --verify --verbose=2 "$DMG"

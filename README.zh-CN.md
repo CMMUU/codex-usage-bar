@@ -97,7 +97,7 @@ flowchart LR
     B --> D["account/rateLimits/read"]
     D --> E["识别七天窗口"]
     E --> F["SwiftUI 菜单栏"]
-    F --> G["App Group 共享快照"]
+    F --> G["App Group 或本机回环快照"]
     G --> H["WidgetKit 时间线"]
 ```
 
@@ -117,9 +117,11 @@ Codex Usage Bar：
 - 不读取浏览器 Cookie
 - 不发送分析数据
 - 不直接调用未公开的 ChatGPT HTTP 接口
+- Widget 降级通道仅监听本机回环接口
 
 认证和令牌刷新由本机 Codex app-server 负责。应用只把标准化后的用量比例、
-重置时间、套餐名称和更新时间写入应用私有的 App Group，供小组件读取。
+重置时间、套餐名称和更新时间写入应用私有的 App Group；在 ad-hoc 版本中，
+Widget 通过本机回环接口读取相同的脱敏快照，不传输认证信息。
 
 ## 开发与验证
 

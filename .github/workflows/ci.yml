@@ -45,7 +45,7 @@ jobs:
 
       - name: Build universal app, widget, and DMG
         env:
-          VERSION: 0.2.0
+          VERSION: 0.2.1
           BUILD_NUMBER: ${{ github.run_number }}
         run: make release-package
 
@@ -53,9 +53,12 @@ jobs:
         run: |
           APP="dist/Codex Usage Bar.app"
           WIDGET="$APP/Contents/PlugIns/CodexUsageWidget.appex"
-          DMG="dist/Codex-Usage-Bar-v0.2.0-universal.dmg"
+          ICON="$APP/Contents/Resources/AppIcon.icns"
+          DMG="dist/Codex-Usage-Bar-v0.2.1-universal.dmg"
+          WIDGET_ENTITLEMENTS="$RUNNER_TEMP/widget-entitlements.plist"
 
           test -d "$WIDGET"
+          test -f "$ICON"
           test -f "$DMG"
           test -f "$DMG.sha256"
 
@@ -63,6 +66,15 @@ jobs:
           plutil -lint "$WIDGET/Contents/Info.plist"
           codesign --verify --deep --strict --verbose=2 \
             "$APP"
+          codesign -d --entitlements :- "$WIDGET" \
+            >"$WIDGET_ENTITLEMENTS"
+          test "$(
+            plutil -extract com.apple.security.network.client raw \
+              "$WIDGET_ENTITLEMENTS"
+          )" = "true"
+          test "$(
+            plutil -extract CFBundleIconFile raw "$APP/Contents/Info.plist"
+          )" = "AppIcon.icns"
           file "$APP/Contents/MacOS/Codex Usage Bar" \
             | grep -q "universal binary"
           file "$WIDGET/Contents/MacOS/CodexUsageWidget" \

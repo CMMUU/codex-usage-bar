@@ -14,6 +14,8 @@
 	<string>Codex Usage Bar</string>
 	<key>CFBundleDisplayName</key>
 	<string>Codex Usage Bar</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon.icns</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

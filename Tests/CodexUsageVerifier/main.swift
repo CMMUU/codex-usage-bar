@@ -8,6 +8,7 @@ struct CodexUsageVerifier {
   static func main() async {
     do {
       try runUnitChecks()
+      try await verifyLocalSnapshotBridge()
       if CommandLine.arguments.contains("--integration") {
         try await runIntegrationCheck()
       }
@@ -208,6 +209,34 @@ struct CodexUsageVerifier {
     let store = SharedUsageStore(directoryURL: temporaryDirectory)
     try store.save(snapshot)
     try expect(store.load() == snapshot, "共享快照原子写入与读取")
+  }
+
+  private static func verifyLocalSnapshotBridge() async throws {
+    let basePort = UInt16.random(in: 54_000...59_000)
+    let ports = [basePort, basePort + 1, basePort + 2]
+    let updatedAt = Date(timeIntervalSince1970: 1_785_645_051)
+    let expected = SharedUsageSnapshot(
+      usedPercent: 47,
+      resetsAt: updatedAt.addingTimeInterval(3_600),
+      planType: "pro",
+      limitName: "Codex",
+      updatedAt: updatedAt
+    )
+    let server = LocalUsageSnapshotServer(ports: ports)
+    server.update(expected)
+    server.start()
+    defer {
+      server.stop()
+    }
+
+    try await Task.sleep(nanoseconds: 150_000_000)
+    let client = LocalUsageSnapshotClient(ports: ports)
+    let received = await withCheckedContinuation { continuation in
+      client.load { snapshot in
+        continuation.resume(returning: snapshot)
+      }
+    }
+    try expect(received == expected, "本机回环同步 Widget 快照")
   }
 
   private static func decodeRateLimits(_ json: String) throws -> RateLimitsReadResult {

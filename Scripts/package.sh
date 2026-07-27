@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Codex Usage Bar"
-VERSION="${VERSION:-0.2.0}"
+VERSION="${VERSION:-0.2.1}"
 BUILD_NUMBER="${BUILD_NUMBER:-2}"
 APP_GROUP_IDENTIFIER="${APP_GROUP_IDENTIFIER:-group.io.cmmuu.codex-usage-bar}"
 CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"
@@ -11,6 +11,7 @@ DERIVED_DATA="$ROOT/.build/xcode"
 APP_SOURCE="$DERIVED_DATA/Build/Products/Release/$APP_NAME.app"
 APP_DIR="$ROOT/dist/$APP_NAME.app"
 WIDGET_DIR="$APP_DIR/Contents/PlugIns/CodexUsageWidget.appex"
+ICON_PATH="$APP_DIR/Contents/Resources/AppIcon.icns"
 
 cd "$ROOT"
 
@@ -45,6 +46,10 @@ ditto "$APP_SOURCE" "$APP_DIR"
 
 if [[ ! -d "$WIDGET_DIR" ]]; then
   printf 'Missing embedded WidgetKit extension: %s\n' "$WIDGET_DIR" >&2
+  exit 1
+fi
+if [[ ! -f "$ICON_PATH" ]]; then
+  printf 'Missing application icon: %s\n' "$ICON_PATH" >&2
   exit 1
 fi
 
