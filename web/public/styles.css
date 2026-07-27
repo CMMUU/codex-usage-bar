@@ -506,10 +506,6 @@ h1 span {
   font-size: 9px;
 }
 
-#release-version {
-  color: var(--cyan);
-}
-
 .release-separator {
   width: 3px;
   height: 3px;

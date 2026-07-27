@@ -61,10 +61,6 @@ const translations = {
       "Inspect how it works, report an issue, or shape the next release.",
     openButton: "Explore on GitHub",
     footer: "Built to keep creators in flow.",
-    downloadAsset: "Download {version}",
-    downloadRelease: "Get {version} on GitHub",
-    downloadLatest: "Get latest on GitHub",
-    latestVersion: "Latest",
     themeAuto: "Follow system",
     themeLight: "Light",
     themeDark: "Dark",
@@ -121,10 +117,6 @@ const translations = {
     openBody: "查看实现、提交问题，或参与塑造下一个版本。",
     openButton: "前往 GitHub",
     footer: "为保持创造者专注而生。",
-    downloadAsset: "下载 {version}",
-    downloadRelease: "在 GitHub 获取 {version}",
-    downloadLatest: "在 GitHub 获取最新版本",
-    latestVersion: "最新版本",
     themeAuto: "跟随系统",
     themeLight: "浅色",
     themeDark: "深色",
@@ -152,14 +144,12 @@ const widgetLanguageButtons = document.querySelectorAll(
 const themeButton = document.querySelector("#theme-toggle");
 const themeLabel = document.querySelector("#theme-label");
 const downloadButton = document.querySelector("#download-button");
-const releaseVersion = document.querySelector("#release-version");
 const systemTheme = matchMedia("(prefers-color-scheme: light)");
 const releaseRefreshInterval = 60_000;
 
 let currentLocale =
   localStorage.getItem("codex-usage-locale")
   ?? (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en");
-let currentRelease = null;
 let releaseRequestInFlight = null;
 let lastReleaseCheckAt = 0;
 let currentPopoverLocale = currentLocale;
@@ -247,7 +237,6 @@ function applyLocale(locale) {
   localStorage.setItem("codex-usage-locale", locale);
   applyPopoverLocale(locale);
   applyWidgetLocale(locale);
-  updateDownloadCopy();
   updateThemeControl();
 }
 
@@ -294,28 +283,6 @@ function applyWidgetLocale(locale) {
   }
 }
 
-function updateDownloadCopy() {
-  if (!currentRelease) {
-    releaseVersion.textContent = translations[currentLocale].latestVersion;
-    return;
-  }
-
-  const version = currentRelease.tagName ?? "latest";
-  if (currentRelease.source === "fallback" || version === "latest") {
-    downloadButton.querySelector("span").textContent =
-      translations[currentLocale].downloadLatest;
-    releaseVersion.textContent = translations[currentLocale].latestVersion;
-    return;
-  }
-
-  const key =
-    currentRelease.downloadKind === "asset"
-      ? "downloadAsset"
-      : "downloadRelease";
-  downloadButton.querySelector("span").textContent =
-    translations[currentLocale][key].replace("{version}", version);
-}
-
 async function loadLatestRelease(force = false) {
   const now = Date.now();
   if (!force && now - lastReleaseCheckAt < releaseRefreshInterval) {
@@ -335,12 +302,9 @@ async function loadLatestRelease(force = false) {
       if (!response.ok) return;
 
       const release = await response.json();
-      if (!release?.downloadUrl || !release?.tagName) return;
+      if (!release?.downloadUrl) return;
 
-      currentRelease = release;
       downloadButton.href = release.downloadUrl;
-      releaseVersion.textContent = release.tagName;
-      updateDownloadCopy();
     } catch {
       // Static GitHub fallback remains available when the release API is offline.
     }
