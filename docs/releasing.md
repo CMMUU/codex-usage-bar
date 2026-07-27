@@ -3,7 +3,13 @@
 Production releases are built by `.github/workflows/release.yml` from semantic
 version tags such as `v0.2.0`.
 
-## Required GitHub Actions secrets
+## Signing modes
+
+The workflow defaults to an ad-hoc signature and does not require an Apple
+Developer account. If all six secrets below are configured, it automatically
+switches to Developer ID signing and Apple notarization.
+
+## Optional GitHub Actions secrets
 
 | Secret | Content |
 | --- | --- |
@@ -14,11 +20,13 @@ version tags such as `v0.2.0`.
 | `APPLE_NOTARY_KEY_ID` | App Store Connect API key ID |
 | `APPLE_NOTARY_ISSUER_ID` | App Store Connect API issuer ID |
 
-The workflow never writes these credentials to the repository or a release
-asset. It imports the certificate into a temporary CI keychain and deletes the
-runner after the job.
+Configure either all six secrets or none of them. A partial configuration stops
+the release before building. The workflow never writes credentials to the
+repository or a release asset. It imports the certificate into a temporary CI
+keychain and the hosted runner is discarded after the job.
 
-The app and widget use the macOS-only, non-provisioned App Group identifier:
+In Developer ID mode, the app and widget use the macOS-only, non-provisioned
+App Group identifier:
 
 ```text
 <APPLE_TEAM_ID>.io.cmmuu.codex-usage-bar
@@ -27,6 +35,11 @@ The app and widget use the macOS-only, non-provisioned App Group identifier:
 macOS validates that the Team ID in this identifier matches the Team ID in both
 code signatures. Apple documents this format in
 [Accessing app group containers in your existing macOS app](https://developer.apple.com/documentation/xcode/accessing-app-group-containers).
+
+Ad-hoc builds retain the default `group.io.cmmuu.codex-usage-bar` entitlement.
+The menu bar app runs after the one-time Gatekeeper confirmation, while App
+Group data sharing with the widget can require additional authorization on
+macOS 15 and later.
 
 ## Publish
 
@@ -42,14 +55,15 @@ code signatures. Apple documents this format in
    ```
 
 4. Push the commit and wait for CI.
-5. Create and push the signed tag:
+5. Create and push the annotated tag:
 
    ```bash
-   git tag -s vX.Y.Z -m "Codex Usage Bar vX.Y.Z"
+   git tag -a vX.Y.Z -m "Codex Usage Bar vX.Y.Z"
    git push origin vX.Y.Z
    ```
 
 The release workflow builds a universal app, embeds and signs the WidgetKit
-extension, creates a DMG, submits it to Apple for notarization, staples the
-ticket, generates a SHA-256 checksum and build attestation, and uploads the
-artifacts to the matching GitHub Release.
+extension, creates a DMG, generates a SHA-256 checksum and build attestation,
+and uploads the artifacts to the matching GitHub Release. Without Apple
+credentials it uses an ad-hoc signature. With all Apple credentials configured,
+it also submits the DMG for notarization and staples the ticket.

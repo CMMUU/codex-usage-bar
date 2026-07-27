@@ -53,7 +53,8 @@ jobs:
         with:
           ref: ${{ steps.release.outputs.tag }}
 
-      - name: Validate signing and notarization secrets
+      - name: Resolve signing mode
+        id: signing
         run: |
           required=(
             APPLE_DEVELOPER_ID_CERTIFICATE_BASE64
@@ -63,17 +64,38 @@ jobs:
             APPLE_NOTARY_KEY_ID
             APPLE_NOTARY_ISSUER_ID
           )
+          configured=0
           for name in "${required[@]}"; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "Missing required GitHub Actions secret: $name" >&2
-              exit 1
+            if [[ -n "${!name:-}" ]]; then
+              configured=$((configured + 1))
             fi
           done
+
+          if [[ "$configured" -eq 0 ]]; then
+            echo "mode=adhoc" >>"$GITHUB_OUTPUT"
+            echo "SIGNING_MODE=adhoc" >>"$GITHUB_ENV"
+            echo "CODE_SIGN_IDENTITY=-" >>"$GITHUB_ENV"
+            echo "Publishing an ad-hoc signed release."
+          elif [[ "$configured" -eq "${#required[@]}" ]]; then
+            echo "mode=developer-id" >>"$GITHUB_OUTPUT"
+            echo "SIGNING_MODE=developer-id" >>"$GITHUB_ENV"
+            echo "Publishing a Developer ID signed and notarized release."
+          else
+            echo "Apple release credentials are only partially configured." >&2
+            echo "Configure all six Apple secrets, or remove all of them for an ad-hoc release." >&2
+            for name in "${required[@]}"; do
+              if [[ -z "${!name:-}" ]]; then
+                echo "Missing GitHub Actions secret: $name" >&2
+              fi
+            done
+            exit 1
+          fi
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Import Developer ID certificate
+        if: steps.signing.outputs.mode == 'developer-id'
         run: |
           KEYCHAIN_PATH="$RUNNER_TEMP/codex-usage-signing.keychain-db"
           CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
@@ -107,7 +129,7 @@ jobs:
           echo "APP_GROUP_IDENTIFIER=$APPLE_TEAM_ID.io.cmmuu.codex-usage-bar" \
             >>"$GITHUB_ENV"
 
-      - name: Build, sign, notarize, and staple DMG
+      - name: Build and package DMG
         env:
           VERSION: ${{ steps.release.outputs.version }}
           BUILD_NUMBER: ${{ github.run_number }}
@@ -122,14 +144,19 @@ jobs:
           DMG="dist/Codex-Usage-Bar-v$VERSION-universal.dmg"
 
           codesign --verify --deep --strict --verbose=2 "$APP"
-          codesign --verify --verbose=2 "$DMG"
-          xcrun stapler validate "$DMG"
-          spctl --assess --type execute --verbose=2 "$APP"
           (
             cd dist
             shasum -a 256 -c "$(basename "$DMG").sha256"
           )
           test -d "$WIDGET"
+
+          if [[ "$SIGNING_MODE" == "developer-id" ]]; then
+            codesign --verify --verbose=2 "$DMG"
+            xcrun stapler validate "$DMG"
+            spctl --assess --type execute --verbose=2 "$APP"
+          else
+            codesign -dvv "$APP" 2>&1 | grep -q "Signature=adhoc"
+          fi
 
       - name: Generate build provenance
         uses: actions/attest@v4

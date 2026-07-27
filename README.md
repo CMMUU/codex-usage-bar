@@ -46,9 +46,13 @@ API-key-only or local-model sessions may not expose ChatGPT account rate limits.
 
 ## Install
 
-Download the latest notarized universal DMG from
+Download the latest universal DMG from
 [GitHub Releases](https://github.com/CMMUU/codex-usage-bar/releases/latest),
 open it, and drag **Codex Usage Bar** to **Applications**.
+
+The current GitHub build uses an ad-hoc signature. If macOS blocks the first
+launch, open **System Settings → Privacy & Security** and choose
+**Open Anyway**. This confirmation is only required once.
 
 After launching the app once, add **Codex 周限额** from the macOS widget
 gallery to the desktop or Notification Center.
@@ -75,9 +79,10 @@ The packaged app is written to:
 dist/Codex Usage Bar.app
 ```
 
-Local builds use an ad-hoc signature unless `CODE_SIGN_IDENTITY` and a matching
-App Group identifier are supplied. Published DMGs use Developer ID signing,
-Apple notarization, stapling, and GitHub artifact attestations.
+Local builds and GitHub Releases use an ad-hoc signature unless
+`CODE_SIGN_IDENTITY` and matching Apple credentials are supplied. The release
+workflow automatically enables Developer ID signing, Apple notarization, and
+stapling when all credentials are configured.
 
 ## How it works
 

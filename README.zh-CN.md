@@ -46,8 +46,11 @@ Codex 让开发者保持心流，但查看剩余用量仍然需要中断当前�
 ## 安装
 
 从 [GitHub Releases](https://github.com/CMMUU/codex-usage-bar/releases/latest)
-下载最新的已公证 Universal DMG，打开后将 **Codex Usage Bar** 拖入
+下载最新的 Universal DMG，打开后将 **Codex Usage Bar** 拖入
 **Applications**。
+
+当前 GitHub 版本使用 ad-hoc 签名。首次启动如果被 macOS 阻止，请打开
+**系统设置 → 隐私与安全性**，点击**仍要打开**。确认一次后即可正常启动。
 
 首次启动并刷新成功后，可以从 macOS 小组件库将 **Codex 周限额** 添加到桌面或通知中心。
 
@@ -73,8 +76,8 @@ open "dist/Codex Usage Bar.app"
 dist/Codex Usage Bar.app
 ```
 
-未提供签名参数时，本地构建使用 ad-hoc 签名。正式 DMG 使用 Developer ID
-签名、Apple 公证、stapling 和 GitHub 构建来源证明。
+未提供 Apple 凭证时，本地构建和 GitHub Release 使用 ad-hoc 签名。配置完整的
+Developer ID 与公证凭证后，发布流水线会自动启用 Apple 公证和 stapling。
 
 ## 工作原理
 
