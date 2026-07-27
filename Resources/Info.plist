@@ -38,5 +38,15 @@
 	<true/>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/CMMUU/codex-usage-bar/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>tdXqlQs0f8vhyDTjZvW7/yQp7d7e1zxyN1EpWoGc+70=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

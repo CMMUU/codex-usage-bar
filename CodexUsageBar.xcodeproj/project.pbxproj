@@ -16,6 +16,7 @@
 		478AE62507861F4B424B3782 /* UsageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5964387CC7B9C1338680606C /* UsageViewModel.swift */; };
 		4E30216F25E52DFB4694ACC5 /* SharedUsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */; };
 		4F97F18AEBE689EDF3988B6F /* DocumentationSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ECB92954168A746830981F /* DocumentationSnapshot.swift */; };
+		5130E3909B626E9983F3FDA5 /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFA933C5E8F4C001CAC9D8E0 /* UpdateManager.swift */; };
 		5207762E1C66FF0C8B645971 /* CodexExecutableLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9854879767FA111E08BD03 /* CodexExecutableLocator.swift */; };
 		551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */; };
 		9F673B2D4A996BC58DDE8351 /* libCodexUsageShared.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 464C371BD43D481345921981 /* libCodexUsageShared.a */; };
@@ -23,6 +24,7 @@
 		B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30702127D771354F007969A4 /* WidgetLanguage.swift */; };
 		BED3C5D8D31711DBE430DB42 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F7F79DBC97C363AAAB5DFB9 /* AppLanguage.swift */; };
 		C15C602F8F419FD38693B620 /* CodexUsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87E3021DF7F9A701E8FDA81 /* CodexUsageWidget.swift */; };
+		C228EA747AFEC3B6560ACCA7 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 184D207E515A8E3BC472A09A /* Sparkle */; };
 		DA49989DBBE96ECB1761F99C /* libCodexUsageShared.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 464C371BD43D481345921981 /* libCodexUsageShared.a */; };
 		F0F9459FB505DF4E428B5C1B /* CodexUsageWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 40D04FF7EE0775B37B299FEC /* CodexUsageWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F5670BE71FF3872AED5ED4AE /* CodexModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2598D59EB5DCF8B1060DE846 /* CodexModels.swift */; };
@@ -93,6 +95,7 @@
 		CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalUsageSnapshotBridge.swift; sourceTree = "<group>"; };
 		E9F0D22719518AF71134EA29 /* CodexUsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexUsageBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F87E3021DF7F9A701E8FDA81 /* CodexUsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageWidget.swift; sourceTree = "<group>"; };
+		FFA933C5E8F4C001CAC9D8E0 /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +113,7 @@
 			files = (
 				272F2E3A48F89C9FEA53F25E /* libCodexUsageCore.a in Frameworks */,
 				DA49989DBBE96ECB1761F99C /* libCodexUsageShared.a in Frameworks */,
+				C228EA747AFEC3B6560ACCA7 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +123,7 @@
 		21EDEAAD2A73A8ADBB8F16D5 /* State */ = {
 			isa = PBXGroup;
 			children = (
+				FFA933C5E8F4C001CAC9D8E0 /* UpdateManager.swift */,
 				5964387CC7B9C1338680606C /* UsageViewModel.swift */,
 			);
 			path = State;
@@ -282,6 +287,7 @@
 			);
 			name = CodexUsageBar;
 			packageProductDependencies = (
+				184D207E515A8E3BC472A09A /* Sparkle */,
 			);
 			productName = CodexUsageBar;
 			productReference = E9F0D22719518AF71134EA29 /* CodexUsageBar.app */;
@@ -332,6 +338,9 @@
 			);
 			mainGroup = AB8BDB194E9E444CF03492DF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				69C95F6FFFE88CA227237DF2 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 377B31B3676ED56A7EC16088 /* Products */;
 			projectDirPath = "";
@@ -421,6 +430,7 @@
 				118A4F7CB169754091C560AE /* CodexUsageBarApp.swift in Sources */,
 				4F97F18AEBE689EDF3988B6F /* DocumentationSnapshot.swift in Sources */,
 				04ACFF3F353C44F11D7A9FEC /* MenuBarLabel.swift in Sources */,
+				5130E3909B626E9983F3FDA5 /* UpdateManager.swift in Sources */,
 				AF97574E9DF7F760F1AF0DBF /* UsageMenuView.swift in Sources */,
 				478AE62507861F4B424B3782 /* UsageViewModel.swift in Sources */,
 			);
@@ -794,6 +804,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		69C95F6FFFE88CA227237DF2 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.9.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		184D207E515A8E3BC472A09A /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 69C95F6FFFE88CA227237DF2 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8B390CEF7568CCC52828942A /* Project object */;
 }

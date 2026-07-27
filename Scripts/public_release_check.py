@@ -36,6 +36,8 @@ REQUIRED_PATHS = {
     "SECURITY.md",
     ".github/workflows/ci.yml",
     ".github/workflows/release.yml",
+    "Package.resolved",
+    "Scripts/generate_appcast.sh",
     "docs/images/usage-popover.png",
     "project.yml",
 }

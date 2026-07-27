@@ -6,11 +6,13 @@ import SwiftUI
 enum DocumentationSnapshot {
   static func render(
     viewModel: UsageViewModel,
+    updateManager: UpdateManager,
     language: AppLanguage,
     to path: String
   ) throws {
     let content = UsageMenuView(
       viewModel: viewModel,
+      updateManager: updateManager,
       language: .constant(language)
     )
     .background(Color(nsColor: .windowBackgroundColor))
@@ -18,7 +20,7 @@ enum DocumentationSnapshot {
 
     let renderer = ImageRenderer(content: content)
     renderer.scale = 2
-    renderer.proposedSize = ProposedViewSize(width: 340, height: 430)
+    renderer.proposedSize = ProposedViewSize(width: 340, height: 475)
 
     guard let image = renderer.cgImage else {
       throw DocumentationSnapshotError.renderFailed

@@ -72,6 +72,30 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
       return "立即刷新"
     case (.english, .refreshNow):
       return "Refresh now"
+    case (.simplifiedChinese, .checkForUpdates):
+      return "检查更新"
+    case (.english, .checkForUpdates):
+      return "Check for updates"
+    case (.simplifiedChinese, .checkingForUpdates):
+      return "正在检查"
+    case (.english, .checkingForUpdates):
+      return "Checking"
+    case (.simplifiedChinese, .updateNow):
+      return "立即更新"
+    case (.english, .updateNow):
+      return "Update now"
+    case (.simplifiedChinese, .updateAvailable):
+      return "新版本"
+    case (.english, .updateAvailable):
+      return "New version"
+    case (.simplifiedChinese, .upToDate):
+      return "已是最新版本"
+    case (.english, .upToDate):
+      return "Up to date"
+    case (.simplifiedChinese, .updateCheckFailed):
+      return "检查更新失败"
+    case (.english, .updateCheckFailed):
+      return "Update check failed"
     case (.simplifiedChinese, .quit):
       return "退出"
     case (.english, .quit):
@@ -185,6 +209,12 @@ public enum AppText: Sendable {
   case refreshTime
   case limitType
   case refreshNow
+  case checkForUpdates
+  case checkingForUpdates
+  case updateNow
+  case updateAvailable
+  case upToDate
+  case updateCheckFailed
   case quit
   case launchAtLogin
   case unknown

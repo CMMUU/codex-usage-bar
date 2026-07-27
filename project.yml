@@ -15,6 +15,11 @@ settings:
     MARKETING_VERSION: 0.2.1
     SWIFT_VERSION: 5.0
 
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.9.4
+
 targets:
   CodexUsageCore:
     type: library.static
@@ -55,6 +60,7 @@ targets:
       - target: CodexUsageCore
       - target: CodexUsageShared
       - target: CodexUsageWidget
+      - package: Sparkle
 
   CodexUsageWidget:
     type: app-extension

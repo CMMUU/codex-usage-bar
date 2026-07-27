@@ -28,6 +28,7 @@ jobs:
       APPLE_NOTARY_KEY_BASE64: ${{ secrets.APPLE_NOTARY_KEY_BASE64 }}
       APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
       APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+      SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
       GH_TOKEN: ${{ github.token }}
 
     steps:
@@ -142,6 +143,7 @@ jobs:
           APP="dist/Codex Usage Bar.app"
           WIDGET="$APP/Contents/PlugIns/CodexUsageWidget.appex"
           ICON="$APP/Contents/Resources/AppIcon.icns"
+          SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
           DMG="dist/Codex-Usage-Bar-v$VERSION-universal.dmg"
           WIDGET_ENTITLEMENTS="$RUNNER_TEMP/widget-entitlements.plist"
 
@@ -152,6 +154,8 @@ jobs:
           )
           test -d "$WIDGET"
           test -f "$ICON"
+          test -d "$SPARKLE"
+          codesign --verify --deep --strict --verbose=2 "$SPARKLE"
           codesign -d --entitlements :- "$WIDGET" \
             >"$WIDGET_ENTITLEMENTS"
           test "$(
@@ -161,6 +165,13 @@ jobs:
           test "$(
             plutil -extract CFBundleIconFile raw "$APP/Contents/Info.plist"
           )" = "AppIcon.icns"
+          test "$(
+            plutil -extract SUFeedURL raw "$APP/Contents/Info.plist"
+          )" = "https://github.com/CMMUU/codex-usage-bar/releases/latest/download/appcast.xml"
+          test "$(
+            plutil -extract SUVerifyUpdateBeforeExtraction raw \
+              "$APP/Contents/Info.plist"
+          )" = "true"
 
           if [[ "$SIGNING_MODE" == "developer-id" ]]; then
             codesign --verify --verbose=2 "$DMG"
@@ -170,12 +181,21 @@ jobs:
             codesign -dvv "$APP" 2>&1 | grep -q "Signature=adhoc"
           fi
 
+      - name: Generate signed Sparkle appcast
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          test -n "$SPARKLE_EDDSA_PRIVATE_KEY"
+          ./Scripts/generate_appcast.sh
+
       - name: Generate build provenance
         uses: actions/attest@v4
         with:
           subject-path: |
             dist/Codex-Usage-Bar-v${{ steps.release.outputs.version }}-universal.dmg
             dist/Codex-Usage-Bar-v${{ steps.release.outputs.version }}-universal.dmg.sha256
+            dist/appcast.xml
 
       - name: Publish GitHub Release
         env:
@@ -184,16 +204,19 @@ jobs:
         run: |
           DMG="dist/Codex-Usage-Bar-v$VERSION-universal.dmg"
           CHECKSUM="$DMG.sha256"
+          APPCAST="dist/appcast.xml"
           NOTES="docs/release-notes/$TAG.md"
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$DMG" "$CHECKSUM" --clobber
+            gh release upload \
+              "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" \
+              --clobber
             gh release edit "$TAG" \
               --title "Codex Usage Bar $TAG" \
               --notes-file "$NOTES" \
               --latest
           else
-            gh release create "$TAG" "$DMG" "$CHECKSUM" \
+            gh release create "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" \
               --title "Codex Usage Bar $TAG" \
               --notes-file "$NOTES" \
               --latest

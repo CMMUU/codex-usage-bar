@@ -4,6 +4,7 @@ import SwiftUI
 @main
 struct CodexUsageBarApp: App {
   @StateObject private var viewModel = UsageViewModel()
+  @StateObject private var updateManager: UpdateManager
   @AppStorage(AppLanguage.storageKey)
   private var storedLanguage = AppLanguage.systemDefault.rawValue
   private let documentationSnapshotPath =
@@ -11,10 +12,26 @@ struct CodexUsageBarApp: App {
   private let documentationSnapshotLanguage =
     ProcessInfo.processInfo.environment["CODEX_USAGE_BAR_DOCUMENTATION_LANGUAGE"]
 
+  init() {
+    let isDocumentationSnapshot =
+      ProcessInfo.processInfo.environment[
+        "CODEX_USAGE_BAR_DOCUMENTATION_SNAPSHOT"
+      ] != nil
+    _updateManager = StateObject(
+      wrappedValue: UpdateManager(
+        startingUpdater: !isDocumentationSnapshot,
+        previewStatus: isDocumentationSnapshot
+          ? .available(version: "0.2.2")
+          : nil
+      )
+    )
+  }
+
   var body: some Scene {
     MenuBarExtra {
       UsageMenuView(
         viewModel: viewModel,
+        updateManager: updateManager,
         language: languageBinding
       )
     } label: {
@@ -28,6 +45,7 @@ struct CodexUsageBarApp: App {
           do {
             try DocumentationSnapshot.render(
               viewModel: viewModel,
+              updateManager: updateManager,
               language: documentationLanguage,
               to: documentationSnapshotPath
             )

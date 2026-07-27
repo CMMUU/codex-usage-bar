@@ -12,6 +12,7 @@ APP_SOURCE="$DERIVED_DATA/Build/Products/Release/$APP_NAME.app"
 APP_DIR="$ROOT/dist/$APP_NAME.app"
 WIDGET_DIR="$APP_DIR/Contents/PlugIns/CodexUsageWidget.appex"
 ICON_PATH="$APP_DIR/Contents/Resources/AppIcon.icns"
+SPARKLE_FRAMEWORK="$APP_DIR/Contents/Frameworks/Sparkle.framework"
 
 cd "$ROOT"
 
@@ -52,6 +53,10 @@ if [[ ! -f "$ICON_PATH" ]]; then
   printf 'Missing application icon: %s\n' "$ICON_PATH" >&2
   exit 1
 fi
+if [[ ! -d "$SPARKLE_FRAMEWORK" ]]; then
+  printf 'Missing embedded Sparkle framework: %s\n' "$SPARKLE_FRAMEWORK" >&2
+  exit 1
+fi
 
 TEMPORARY_ENTITLEMENTS="$(mktemp -d)"
 trap 'rm -rf "$TEMPORARY_ENTITLEMENTS"' EXIT
@@ -75,6 +80,28 @@ if [[ "$CODE_SIGN_IDENTITY" != "-" ]]; then
   SIGN_ARGUMENTS+=(--options runtime --timestamp)
 fi
 
+SPARKLE_SIGN_ARGUMENTS=(--force --sign "$CODE_SIGN_IDENTITY" --options runtime)
+if [[ "$CODE_SIGN_IDENTITY" != "-" ]]; then
+  SPARKLE_SIGN_ARGUMENTS+=(--timestamp)
+fi
+
+codesign \
+  "${SPARKLE_SIGN_ARGUMENTS[@]}" \
+  "$SPARKLE_FRAMEWORK/Versions/B/XPCServices/Installer.xpc"
+codesign \
+  "${SPARKLE_SIGN_ARGUMENTS[@]}" \
+  --preserve-metadata=entitlements \
+  "$SPARKLE_FRAMEWORK/Versions/B/XPCServices/Downloader.xpc"
+codesign \
+  "${SPARKLE_SIGN_ARGUMENTS[@]}" \
+  "$SPARKLE_FRAMEWORK/Versions/B/Autoupdate"
+codesign \
+  "${SPARKLE_SIGN_ARGUMENTS[@]}" \
+  "$SPARKLE_FRAMEWORK/Versions/B/Updater.app"
+codesign \
+  "${SPARKLE_SIGN_ARGUMENTS[@]}" \
+  "$SPARKLE_FRAMEWORK"
+
 codesign \
   "${SIGN_ARGUMENTS[@]}" \
   --entitlements "$TEMPORARY_ENTITLEMENTS/widget.entitlements" \
@@ -91,3 +118,4 @@ codesign --verify --deep --strict --verbose=2 "$APP_DIR"
 printf 'Packaged: %s\n' "$APP_DIR"
 printf 'Version: %s (%s)\n' "$VERSION" "$BUILD_NUMBER"
 printf 'App Group: %s\n' "$APP_GROUP_IDENTIFIER"
+printf 'Sparkle: 2.9.4\n'

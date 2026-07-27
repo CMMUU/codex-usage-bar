@@ -276,6 +276,16 @@ struct CodexUsageVerifier {
         && AppLanguage.simplifiedChinese.widgetWaitingTitle == "等待用量数据",
       "提供中英文 Widget 文案"
     )
+    try expect(
+      AppLanguage.simplifiedChinese.text(.checkForUpdates) == "检查更新"
+        && AppLanguage.english.text(.checkForUpdates) == "Check for updates",
+      "提供中英文更新按钮文案"
+    )
+    try expect(
+      AppLanguage.simplifiedChinese.text(.updateAvailable) == "新版本"
+        && AppLanguage.english.text(.updateAvailable) == "New version",
+      "提供中英文新版本提示"
+    )
   }
 
   private static func verifyLocalSnapshotBridge() async throws {

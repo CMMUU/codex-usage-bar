@@ -29,6 +29,7 @@ or storing your authentication token.
 - Current plan and limit name
 - Automatic refresh every five minutes
 - Manual refresh
+- Secure in-app updates with a new-version badge
 - Launch at login
 - Simplified Chinese and English switch shared by the popover and widgets
 - Native SwiftUI menu bar interface
@@ -57,6 +58,10 @@ launch, open **System Settings → Privacy & Security** and choose
 
 After launching the app once, add **Codex 周限额** from the macOS widget
 gallery to the desktop or Notification Center.
+
+Starting with v0.2.1, future releases can be installed from the update button
+inside the menu bar popover. Update archives and the appcast are verified with
+Sparkle EdDSA signatures.
 
 Each release includes a `.sha256` file:
 

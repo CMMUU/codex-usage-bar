@@ -41,6 +41,27 @@ The menu bar app runs after the one-time Gatekeeper confirmation, while App
 Group data sharing with the widget can require additional authorization on
 macOS 15 and later.
 
+## Required Sparkle signing secret
+
+Automatic updates use a separate EdDSA key and do not require an Apple
+Developer account.
+
+| Secret | Content |
+| --- | --- |
+| `SPARKLE_EDDSA_PRIVATE_KEY` | Private key exported by Sparkle `generate_keys -x` |
+
+The matching public key is embedded in `Resources/Info.plist`. The private key
+must only exist in the maintainer's macOS Keychain, an offline backup, and the
+GitHub Actions secret. Never add it to the repository, logs, release notes, or
+workflow arguments.
+
+Each release signs both the DMG enclosure and the appcast. The resulting
+`appcast.xml` is uploaded to GitHub Releases and served through:
+
+```text
+https://github.com/CMMUU/codex-usage-bar/releases/latest/download/appcast.xml
+```
+
 ## Publish
 
 1. Update `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`.
@@ -63,7 +84,8 @@ macOS 15 and later.
    ```
 
 The release workflow builds a universal app, embeds and signs the WidgetKit
-extension, creates a DMG, generates a SHA-256 checksum and build attestation,
-and uploads the artifacts to the matching GitHub Release. Without Apple
-credentials it uses an ad-hoc signature. With all Apple credentials configured,
-it also submits the DMG for notarization and staples the ticket.
+extension and Sparkle framework, creates a DMG, generates a SHA-256 checksum,
+produces a signed Sparkle appcast and build attestation, and uploads the
+artifacts to the matching GitHub Release. Without Apple credentials it uses an
+ad-hoc signature. With all Apple credentials configured, it also submits the
+DMG for notarization and staples the ticket.

@@ -4,6 +4,7 @@ import SwiftUI
 
 struct UsageMenuView: View {
   @ObservedObject var viewModel: UsageViewModel
+  @ObservedObject var updateManager: UpdateManager
   @Binding var language: AppLanguage
 
   var body: some View {
@@ -25,6 +26,7 @@ struct UsageMenuView: View {
     .environment(\.locale, language.locale)
     .task {
       await viewModel.refreshIfStale()
+      updateManager.checkForUpdateInformationIfNeeded()
     }
   }
 
@@ -124,6 +126,25 @@ struct UsageMenuView: View {
         .keyboardShortcut("q")
       }
 
+      HStack(spacing: 8) {
+        Button {
+          updateManager.checkForUpdates()
+        } label: {
+          Label(
+            updateButtonTitle,
+            systemImage: updateButtonSystemImage
+          )
+        }
+        .disabled(
+          !updateManager.canCheckForUpdates
+            || updateManager.status == .checking
+        )
+
+        Spacer()
+
+        updateStatusBadge
+      }
+
       Toggle(
         language.text(.launchAtLogin),
         isOn: Binding(
@@ -142,6 +163,67 @@ struct UsageMenuView: View {
           .fixedSize(horizontal: false, vertical: true)
       }
     }
+  }
+
+  private var updateButtonTitle: String {
+    switch updateManager.status {
+    case .checking:
+      return language.text(.checkingForUpdates)
+    case .available:
+      return language.text(.updateNow)
+    default:
+      return language.text(.checkForUpdates)
+    }
+  }
+
+  private var updateButtonSystemImage: String {
+    switch updateManager.status {
+    case .available:
+      return "arrow.down.circle"
+    default:
+      return "arrow.triangle.2.circlepath"
+    }
+  }
+
+  @ViewBuilder
+  private var updateStatusBadge: some View {
+    switch updateManager.status {
+    case .idle, .checking:
+      EmptyView()
+    case .upToDate:
+      Text(language.text(.upToDate))
+        .foregroundStyle(.secondary)
+        .font(.caption)
+    case .available(let version):
+      HStack(spacing: 4) {
+        Circle()
+          .fill(Color.accentColor)
+          .frame(width: 6, height: 6)
+        Text(
+          "\(language.text(.updateAvailable)) \(displayVersion(version))"
+        )
+      }
+      .padding(.horizontal, 8)
+      .padding(.vertical, 4)
+      .foregroundStyle(Color.accentColor)
+      .background(
+        Color.accentColor.opacity(0.12),
+        in: Capsule()
+      )
+      .font(.caption)
+    case .failed(let message):
+      Label(
+        language.text(.updateCheckFailed),
+        systemImage: "exclamationmark.circle"
+      )
+      .foregroundStyle(.orange)
+      .font(.caption)
+      .help(message)
+    }
+  }
+
+  private func displayVersion(_ version: String) -> String {
+    version.hasPrefix("v") ? version : "v\(version)"
   }
 
   private var progressColor: Color {

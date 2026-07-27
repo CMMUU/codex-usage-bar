@@ -250,8 +250,8 @@ function applyPopoverLocale(locale) {
   if (popoverPreviewImage) {
     popoverPreviewImage.src =
       currentPopoverLocale === "zh"
-        ? "/assets/usage-popover-zh-Hans.png"
-        : "/assets/usage-popover-en.png";
+        ? "/assets/usage-popover-zh-Hans-v0.2.1.png"
+        : "/assets/usage-popover-en-v0.2.1.png";
     popoverPreviewImage.alt =
       translations[currentPopoverLocale].popoverPreviewAlt;
   }
