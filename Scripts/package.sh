@@ -58,13 +58,11 @@ cp \
   "$ROOT/Resources/CodexUsageWidget.entitlements" \
   "$TEMPORARY_ENTITLEMENTS/widget.entitlements"
 
-plutil -replace \
-  "com.apple.security.application-groups.0" \
-  -string "$APP_GROUP_IDENTIFIER" \
+/usr/libexec/PlistBuddy \
+  -c "Set :com.apple.security.application-groups:0 $APP_GROUP_IDENTIFIER" \
   "$TEMPORARY_ENTITLEMENTS/app.entitlements"
-plutil -replace \
-  "com.apple.security.application-groups.0" \
-  -string "$APP_GROUP_IDENTIFIER" \
+/usr/libexec/PlistBuddy \
+  -c "Set :com.apple.security.application-groups:0 $APP_GROUP_IDENTIFIER" \
   "$TEMPORARY_ENTITLEMENTS/widget.entitlements"
 
 SIGN_ARGUMENTS=(--force --sign "$CODE_SIGN_IDENTITY")
