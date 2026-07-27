@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    runs-on: macos-26
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Check formatting
+        run: swift format lint --recursive Sources Tests Package.swift
+
+      - name: Run deterministic verifier
+        run: make test
+
+      - name: Build app bundle
+        run: make package
+
+      - name: Verify bundle metadata and signature
+        run: |
+          plutil -lint "dist/Codex Usage Bar.app/Contents/Info.plist"
+          codesign --verify --deep --strict --verbose=2 \
+            "dist/Codex Usage Bar.app"
+
+      - name: Check public-release boundaries
+        run: make public-release-check
