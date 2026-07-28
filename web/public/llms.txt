@@ -1,0 +1,26 @@
+# Codex Usage Bar
+
+Codex Usage Bar is a free, open-source macOS menu bar application and native
+WidgetKit widget for viewing Codex weekly usage, remaining quota, reset time,
+plan, and refresh status without leaving the current workflow.
+
+## Official links
+
+- Website: https://codex.cmmuu.com/
+- Source code: https://github.com/CMMUU/codex-usage-bar
+- Latest release: https://github.com/CMMUU/codex-usage-bar/releases/latest
+- Issues: https://github.com/CMMUU/codex-usage-bar/issues
+- License: https://github.com/CMMUU/codex-usage-bar/blob/main/LICENSE
+
+## Key facts
+
+- Platform: macOS 13 or later
+- Distribution: Universal DMG through GitHub Releases
+- License: MIT
+- Languages: English and Simplified Chinese
+- Data handling: local-first; no analytics, browser cookies, or copied tokens
+- Main features: menu bar usage, desktop and Notification Center widgets,
+  automatic refresh, launch at login, and secure automatic updates
+
+Codex Usage Bar is an independent, unofficial community project. It is not
+affiliated with, endorsed by, or sponsored by OpenAI.

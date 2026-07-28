@@ -1,5 +1,13 @@
 const translations = {
   en: {
+    seoTitle: "Codex Usage Bar — Codex Usage Monitor for macOS",
+    seoDescription:
+      "Track Codex weekly usage, remaining quota, and reset time from the macOS menu bar and native widgets. Free, open source, and privacy-first.",
+    seoKeywords:
+      "Codex usage, Codex weekly limit, Codex quota, macOS menu bar, Codex widget, OpenAI Codex, Codex Usage Bar",
+    seoImageAlt:
+      "Codex Usage Bar showing Codex weekly usage in the macOS menu bar and widget",
+    seoLocale: "en_US",
     eyebrow: "Native macOS menu bar utility",
     headlineOne: "Your Codex limit.",
     headlineTwo: "One glance away.",
@@ -65,6 +73,14 @@ const translations = {
     themeDark: "Dark",
   },
   zh: {
+    seoTitle: "Codex Usage Bar — macOS 菜单栏 Codex 周限额与用量小组件",
+    seoDescription:
+      "从 macOS 菜单栏和原生小组件查看 Codex 周限额、剩余额度与重置时间。免费开源、本地优先，不读取或保存认证令牌。",
+    seoKeywords:
+      "Codex 用量, Codex 周限额, Codex 剩余额度, macOS 菜单栏, Codex 小组件, Codex Usage Bar",
+    seoImageAlt:
+      "Codex Usage Bar 在 macOS 菜单栏和小组件中展示 Codex 周限额",
+    seoLocale: "zh_CN",
     eyebrow: "原生 macOS 菜单栏工具",
     headlineOne: "Codex 限额。",
     headlineTwo: "抬眼即见。",
@@ -149,6 +165,13 @@ let currentWidgetLocale = currentLocale;
 let currentThemePreference =
   document.documentElement.dataset.themePreference ?? "auto";
 
+function setMetaContent(selector, content) {
+  const node = document.querySelector(selector);
+  if (node) {
+    node.content = content;
+  }
+}
+
 function saveThemePreference(preference) {
   try {
     if (preference === "auto") {
@@ -203,11 +226,18 @@ function applyThemePreference(preference, persist = false) {
 
 function applyLocale(locale) {
   currentLocale = locale;
+  const seo = translations[locale];
   document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
-  document.title =
-    locale === "zh"
-      ? "Codex Usage Bar — 菜单栏里的周限额度"
-      : "Codex Usage Bar — Your weekly limit at a glance";
+  document.title = seo.seoTitle;
+  setMetaContent('meta[name="description"]', seo.seoDescription);
+  setMetaContent('meta[name="keywords"]', seo.seoKeywords);
+  setMetaContent('meta[property="og:title"]', seo.seoTitle);
+  setMetaContent('meta[property="og:description"]', seo.seoDescription);
+  setMetaContent('meta[property="og:locale"]', seo.seoLocale);
+  setMetaContent('meta[property="og:image:alt"]', seo.seoImageAlt);
+  setMetaContent('meta[name="twitter:title"]', seo.seoTitle);
+  setMetaContent('meta[name="twitter:description"]', seo.seoDescription);
+  setMetaContent('meta[name="twitter:image:alt"]', seo.seoImageAlt);
 
   for (const node of copyNodes) {
     const key = node.dataset.copy;

@@ -1,0 +1,22 @@
+{
+  "name": "Codex Usage Bar",
+  "short_name": "Codex Usage",
+  "description": "Track Codex weekly usage, remaining quota, and reset time from the macOS menu bar and native widgets.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07090f",
+  "theme_color": "#07090f",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
