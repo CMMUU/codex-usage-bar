@@ -1,6 +1,6 @@
-# Codex Usage Bar
+# Codex Usage Bar — macOS Codex 用量菜单栏与小组件
 
-> **保持开发心流，随时掌握 Codex 用量。**
+> **保持开发心流，从 Mac 菜单栏和小组件随时掌握 Codex 周用量。**
 
 [![CI](https://github.com/CMMUU/codex-usage-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/CMMUU/codex-usage-bar/actions/workflows/ci.yml)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple)](https://support.apple.com/macos)
@@ -11,15 +11,23 @@
 [最新版本](https://github.com/CMMUU/codex-usage-bar/releases/latest) ·
 [English](README.md)
 
-Codex 让开发者保持心流，但查看剩余用量仍然需要中断当前操作：打开左下角账户菜单，再进入
-**Remaining usage**。
+Codex Usage Bar 是一款免费、开源、原生的 macOS 菜单栏应用和 WidgetKit
+小组件，用于查看 Codex 周用量、剩余额度与重置时间。无需再打开 Codex
+账户菜单并进入 **Remaining usage**，抬眼就能确认当前限额状态，同时不读取或保存认证令牌。
 
-因此我开发了 Codex Usage Bar——一个轻量、原生、开源的 macOS
-菜单栏工具，把周用量、剩余额度和重置时间放到一眼可见的位置，并且不读取或保存认证令牌。
+## 产品预览
 
-<p align="center">
-  <img src="docs/images/usage-popover.png" width="360" alt="Codex Usage Bar 显示周用量、剩余额度、重置时间和套餐" />
-</p>
+### 菜单栏应用
+
+| English | 简体中文 |
+| --- | --- |
+| <img src="docs/images/menu-bar-app-en.png" alt="Codex Usage Bar 英文版 macOS 菜单栏应用，显示 Codex 周用量、剩余额度、重置时间和更新提示" /> | <img src="docs/images/menu-bar-app-zh-CN.png" alt="Codex Usage Bar 简体中文版 macOS 菜单栏应用，显示 Codex 周用量、剩余额度、重置时间和更新提示" /> |
+
+### macOS 小组件
+
+| English | 简体中文 |
+| --- | --- |
+| <img src="docs/images/widgets-en.png" alt="Codex Usage Bar 英文版小号和中号 WidgetKit 小组件，可用于 macOS 桌面和通知中心" /> | <img src="docs/images/widgets-zh-CN.png" alt="Codex Usage Bar 简体中文版小号和中号 WidgetKit 小组件，可用于 macOS 桌面和通知中心" /> |
 
 ## 功能
 
@@ -169,10 +177,6 @@ Release 查询接口。下载按钮始终指向 GitHub，不在 Cloudflare 保�
 - 可选的短周期用量显示
 - 改进多账号和多限额展示
 - 自定义刷新间隔
-
-## 社区
-
-- [LINUX DO](https://linux.do/) — 感谢社区提供技术交流与开源分享的空间。
 
 ## 许可证
 

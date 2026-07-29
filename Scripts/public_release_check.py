@@ -38,7 +38,11 @@ REQUIRED_PATHS = {
     ".github/workflows/release.yml",
     "Package.resolved",
     "Scripts/generate_appcast.sh",
+    "docs/images/menu-bar-app-en.png",
+    "docs/images/menu-bar-app-zh-CN.png",
     "docs/images/usage-popover.png",
+    "docs/images/widgets-en.png",
+    "docs/images/widgets-zh-CN.png",
     "project.yml",
 }
 FORBIDDEN_PATTERNS = {

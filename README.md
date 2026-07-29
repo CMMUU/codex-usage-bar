@@ -1,6 +1,6 @@
-# Codex Usage Bar
+# Codex Usage Bar — macOS Codex Usage Monitor & Widgets
 
-> **Stay in flow. Keep your Codex usage in sight.**
+> **Stay in flow. Track Codex weekly usage from your Mac menu bar and widgets.**
 
 [![CI](https://github.com/CMMUU/codex-usage-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/CMMUU/codex-usage-bar/actions/workflows/ci.yml)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple)](https://support.apple.com/macos)
@@ -11,16 +11,25 @@
 [Latest release](https://github.com/CMMUU/codex-usage-bar/releases/latest) ·
 [中文文档](README.zh-CN.md)
 
-Codex helps developers stay in flow, but checking remaining usage still takes
-several clicks: open the profile menu, then navigate to **Remaining usage**.
+Codex Usage Bar is a free, open-source, native macOS menu bar app and WidgetKit
+companion for tracking Codex weekly usage, remaining quota, and reset time.
+Instead of opening the Codex account menu and navigating to **Remaining
+usage**, you can check your current limit at a glance—without reading or storing
+your authentication token.
 
-Codex Usage Bar is a small, native macOS menu bar companion that keeps your
-weekly usage, remaining capacity, and reset time one click away—without reading
-or storing your authentication token.
+## Product preview
 
-<p align="center">
-  <img src="docs/images/usage-popover.png" width="360" alt="Codex Usage Bar showing weekly usage, remaining capacity, reset time, and plan" />
-</p>
+### Menu bar app
+
+| English | 简体中文 |
+| --- | --- |
+| <img src="docs/images/menu-bar-app-en.png" alt="Codex Usage Bar English macOS menu bar app showing weekly Codex usage, remaining quota, reset time, and an update notification" /> | <img src="docs/images/menu-bar-app-zh-CN.png" alt="Codex Usage Bar 简体中文 macOS 菜单栏应用，显示 Codex 周用量、剩余额度、重置时间和更新提示" /> |
+
+### macOS widgets
+
+| English | 简体中文 |
+| --- | --- |
+| <img src="docs/images/widgets-en.png" alt="Codex Usage Bar English small and medium WidgetKit widgets for the macOS desktop and Notification Center" /> | <img src="docs/images/widgets-zh-CN.png" alt="Codex Usage Bar 简体中文小号和中号 WidgetKit 小组件，可用于 macOS 桌面和通知中心" /> |
 
 ## Features
 
@@ -211,10 +220,6 @@ opening a public issue.
 - Optional short-window usage display
 - Improved multi-account and multi-limit presentation
 - User-configurable refresh interval
-
-## Community
-
-- [LINUX DO](https://linux.do/) — a community for technical discussion and open-source sharing.
 
 ## License
 
