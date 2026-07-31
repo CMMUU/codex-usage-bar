@@ -9,3 +9,4 @@ DerivedData/
 .netrc
 /web/node_modules
 /web/.wrangler
+CodexUsageBar.xcodeproj/project.xcworkspace/
