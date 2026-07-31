@@ -212,12 +212,25 @@ final class UsageViewModel: ObservableObject {
         ),
         planType: "pro",
         limitName: "Codex",
-        reachedLimitType: nil
+        reachedLimitType: nil,
+        fiveHourWindow: UsageSubWindow(
+          usedPercent: 45,
+          windowDurationMinutes: 300,
+          resetsAt: calendar.date(
+            from: DateComponents(
+              year: 2026,
+              month: 7,
+              day: 27,
+              hour: 15,
+              minute: 30
+            )
+          )
+        )
       )
     case .k3:
       snapshot = UsageSnapshot(
         usedPercent: 21,
-        windowDurationMinutes: 300,
+        windowDurationMinutes: 0,
         resetsAt: calendar.date(
           from: DateComponents(
             year: 2026,
@@ -229,7 +242,20 @@ final class UsageViewModel: ObservableObject {
         ),
         planType: "intermediate",
         limitName: "K3",
-        reachedLimitType: nil
+        reachedLimitType: nil,
+        fiveHourWindow: UsageSubWindow(
+          usedPercent: 50,
+          windowDurationMinutes: 300,
+          resetsAt: calendar.date(
+            from: DateComponents(
+              year: 2026,
+              month: 7,
+              day: 31,
+              hour: 10,
+              minute: 22
+            )
+          )
+        )
       )
     }
     lastUpdated = calendar.date(
@@ -294,7 +320,9 @@ final class UsageViewModel: ObservableObject {
       limitName: snapshot.limitName,
       updatedAt: updatedAt,
       languageCode: displayLanguage.rawValue,
-      subscriptionID: selectedSubscription.rawValue
+      subscriptionID: selectedSubscription.rawValue,
+      fiveHourUsedPercent: snapshot.fiveHourWindow?.usedPercent,
+      fiveHourResetsAt: snapshot.fiveHourWindow?.resetsAt
     )
 
     localUsageServer.update(sharedSnapshot)

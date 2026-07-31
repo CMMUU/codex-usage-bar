@@ -41,9 +41,13 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case (.english, .subtitle):
       return "Weekly limit usage"
     case (.simplifiedChinese, .k3Subtitle):
-      return "5 小时窗口使用情况"
+      return "限额使用情况"
     case (.english, .k3Subtitle):
-      return "5-hour window usage"
+      return "Limit usage"
+    case (.simplifiedChinese, .fiveHourLimit):
+      return "5 小时限额"
+    case (.english, .fiveHourLimit):
+      return "5-hour limit"
     case (.simplifiedChinese, .subscriptionPicker):
       return "订阅"
     case (.english, .subscriptionPicker):
@@ -250,4 +254,5 @@ public enum AppText: Sendable {
   case subscriptionPicker
   case k3Subtitle
   case windowUsed
+  case fiveHourLimit
 }

@@ -65,7 +65,8 @@ public enum KimiUsageClientError: LocalizedError, Equatable {
 }
 
 public enum KimiUsageMapper {
-  private static let defaultWindowMinutes = 300
+  private static let fiveHourWindowMinutes = 5 * 60
+  private static let fiveHourWindowRange = (4 * 60 + 30)...(5 * 60 + 30)
 
   public static func snapshot(from data: Data) throws -> UsageSnapshot {
     guard let payload = try? JSONDecoder().decode(KimiUsagesPayload.self, from: data) else {
@@ -78,18 +79,35 @@ public enum KimiUsageMapper {
       throw KimiUsageClientError.invalidResponse
     }
 
-    let windowMinutes =
-      payload.limits?
-      .first(where: { $0.window?.timeUnit == "TIME_UNIT_MINUTE" })?
-      .window?.duration ?? defaultWindowMinutes
-
     return UsageSnapshot(
       usedPercent: min(100, max(0, used / limit * 100)),
-      windowDurationMinutes: windowMinutes,
+      // The top-level quota does not declare its window length.
+      windowDurationMinutes: 0,
       resetsAt: parseResetTime(usage.resetTime),
       planType: planName(from: payload.user?.membership?.level),
       limitName: "K3",
-      reachedLimitType: nil
+      reachedLimitType: nil,
+      fiveHourWindow: fiveHourWindow(from: payload.limits)
+    )
+  }
+
+  private static func fiveHourWindow(
+    from limits: [KimiUsagesPayload.LimitEntry]?
+  ) -> UsageSubWindow? {
+    guard let entry = limits?.first(where: {
+      $0.window?.timeUnit == "TIME_UNIT_MINUTE"
+        && $0.window?.duration.map(fiveHourWindowRange.contains) == true
+    }), let detail = entry.detail,
+      let limit = detail.limit.flatMap(Double.init), limit > 0,
+      let used = detail.used.flatMap(Double.init)
+    else {
+      return nil
+    }
+
+    return UsageSubWindow(
+      usedPercent: min(100, max(0, used / limit * 100)),
+      windowDurationMinutes: entry.window?.duration ?? fiveHourWindowMinutes,
+      resetsAt: parseResetTime(detail.resetTime)
     )
   }
 
@@ -138,6 +156,7 @@ private struct KimiUsagesPayload: Decodable {
       let timeUnit: String?
     }
     let window: Window?
+    let detail: Quota?
   }
 
   let user: User?

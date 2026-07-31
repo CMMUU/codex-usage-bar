@@ -1,4 +1,5 @@
 import AppKit
+import CodexUsageCore
 import CodexUsageShared
 import SwiftUI
 
@@ -127,7 +128,46 @@ struct UsageMenuView: View {
           .monospacedDigit()
       }
       .font(.subheadline)
+
+      if let fiveHour = viewModel.snapshot?.fiveHourWindow {
+        fiveHourSection(fiveHour)
+      }
     }
+  }
+
+  private func fiveHourSection(_ window: UsageSubWindow) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack {
+        Text(language.text(.fiveHourLimit))
+          .font(.subheadline.weight(.medium))
+        Spacer()
+        Text(percentText(window.usedPercent))
+          .font(.subheadline.weight(.semibold))
+          .monospacedDigit()
+      }
+
+      UsageProgressBar(
+        value: window.usedPercent,
+        color: progressColor(for: window.usedPercent)
+      )
+      .accessibilityLabel(language.text(.fiveHourLimit))
+      .accessibilityValue(percentText(window.usedPercent))
+
+      HStack {
+        Text(
+          "\(language.text(.remainingQuota)) "
+            + percentText(window.remainingPercent)
+        )
+        Spacer()
+        Text(
+          "\(language.text(.resetTime)) "
+            + language.resetDisplayText(window.resetsAt)
+        )
+      }
+      .font(.caption)
+      .foregroundStyle(.secondary)
+    }
+    .padding(.top, 2)
   }
 
   private var detailsSection: some View {
@@ -273,7 +313,11 @@ struct UsageMenuView: View {
   }
 
   private var progressColor: Color {
-    guard let used = viewModel.snapshot?.usedPercent else {
+    progressColor(for: viewModel.snapshot?.usedPercent)
+  }
+
+  private func progressColor(for usedPercent: Double?) -> Color {
+    guard let used = usedPercent else {
       return .accentColor
     }
     if used >= 90 {

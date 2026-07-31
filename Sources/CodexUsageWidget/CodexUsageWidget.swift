@@ -219,6 +219,12 @@ private struct UsageWidgetView: View {
           language.text(.remainingQuota),
           percentText(snapshot.remainingPercent)
         )
+        if let fiveHourUsed = snapshot.fiveHourUsedPercent {
+          metricRow(
+            language.text(.fiveHourLimit),
+            percentText(fiveHourUsed)
+          )
+        }
         metricRow(
           language.text(.resetTime),
           language.resetDisplayText(snapshot.resetsAt)

@@ -81,6 +81,16 @@ struct CodexUsageVerifier {
     )
     try expect(secondaryUsage.usedPercent == 61.5, "从 secondary 选择周窗口")
     try expect(secondaryUsage.planType == "plus", "使用账号套餐兜底")
+    try expect(
+      secondaryUsage.fiveHourWindow?.usedPercent == 5,
+      "提取五小时限额窗口"
+    )
+    try expect(
+      secondaryUsage.fiveHourWindow?.resetsAt
+        == Date(timeIntervalSince1970: 1_000),
+      "五小时限额重置时间"
+    )
+    try expect(primaryUsage.fiveHourWindow == nil, "无五小时窗口时不展示")
 
     let mappedWeekly = try decodeRateLimits(
       """
@@ -180,7 +190,7 @@ struct CodexUsageVerifier {
     try expect(snapshot.remainingPercent == 83, "K3 计算剩余额度")
     try expect(snapshot.planType == "intermediate", "K3 映射套餐等级")
     try expect(snapshot.limitName == "K3", "K3 设置限额名称")
-    try expect(snapshot.windowDurationMinutes == 300, "K3 读取窗口长度")
+    try expect(snapshot.windowDurationMinutes == 0, "K3 主窗口时长未知")
 
     let resetFormatter = ISO8601DateFormatter()
     resetFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -189,6 +199,40 @@ struct CodexUsageVerifier {
         from: "2026-07-31T03:22:24.930601Z"
       ),
       "K3 解析重置时间"
+    )
+
+    try expect(
+      snapshot.fiveHourWindow?.usedPercent == 20,
+      "K3 提取五小时限额"
+    )
+    try expect(
+      snapshot.fiveHourWindow?.windowDurationMinutes == 300,
+      "K3 五小时窗口长度"
+    )
+    try expect(
+      snapshot.fiveHourWindow?.resetsAt
+        == resetFormatter.date(from: "2026-07-31T02:22:24.930601Z"),
+      "K3 五小时限额重置时间"
+    )
+
+    let withoutLimits = try KimiUsageMapper.snapshot(
+      from: Data(
+        "{\"usage\":{\"limit\":\"100\",\"used\":\"17\"}}".utf8
+      )
+    )
+    try expect(
+      withoutLimits.fiveHourWindow == nil,
+      "K3 无 limits 字段时隐藏五小时限额"
+    )
+
+    let emptyLimits = try KimiUsageMapper.snapshot(
+      from: Data(
+        "{\"usage\":{\"limit\":\"100\",\"used\":\"17\"},\"limits\":[]}".utf8
+      )
+    )
+    try expect(
+      emptyLimits.fiveHourWindow == nil,
+      "K3 空 limits 数组时隐藏五小时限额"
     )
 
     do {
@@ -246,6 +290,14 @@ struct CodexUsageVerifier {
         + "剩余 \(Int(snapshot.remainingPercent.rounded()))%，"
         + "套餐 \(snapshot.planType ?? "未知")"
     )
+    if let fiveHour = snapshot.fiveHourWindow {
+      print(
+        "PASS 实时 K3 五小时限额：已用 "
+          + "\(Int(fiveHour.usedPercent.rounded()))%"
+      )
+    } else {
+      print("PASS 实时 K3 无五小时限额（按需隐藏）")
+    }
   }
 
   private static func verifyExecutableOverride() throws {
@@ -353,6 +405,10 @@ struct CodexUsageVerifier {
     try expect(
       legacySnapshot.languageCode == nil,
       "兼容不含语言字段的旧 Widget 快照"
+    )
+    try expect(
+      legacySnapshot.fiveHourUsedPercent == nil,
+      "兼容不含五小时字段的旧 Widget 快照"
     )
   }
 

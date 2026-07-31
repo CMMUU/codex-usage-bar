@@ -8,6 +8,8 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
   public let updatedAt: Date
   public let languageCode: String?
   public let subscriptionID: String?
+  public let fiveHourUsedPercent: Double?
+  public let fiveHourResetsAt: Date?
 
   public init(
     usedPercent: Double,
@@ -16,7 +18,9 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
     limitName: String?,
     updatedAt: Date,
     languageCode: String? = nil,
-    subscriptionID: String? = nil
+    subscriptionID: String? = nil,
+    fiveHourUsedPercent: Double? = nil,
+    fiveHourResetsAt: Date? = nil
   ) {
     self.usedPercent = min(100, max(0, usedPercent))
     self.resetsAt = resetsAt
@@ -25,10 +29,18 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
     self.updatedAt = updatedAt
     self.languageCode = languageCode
     self.subscriptionID = subscriptionID
+    self.fiveHourUsedPercent = fiveHourUsedPercent.map {
+      min(100, max(0, $0))
+    }
+    self.fiveHourResetsAt = fiveHourResetsAt
   }
 
   public var remainingPercent: Double {
     max(0, 100 - usedPercent)
+  }
+
+  public var fiveHourRemainingPercent: Double? {
+    fiveHourUsedPercent.map { max(0, 100 - $0) }
   }
 
   public func isStale(

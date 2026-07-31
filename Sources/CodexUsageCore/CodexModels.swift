@@ -45,6 +45,26 @@ struct CodexRateLimitWindow: Decodable, Sendable {
   let resetsAt: Int64?
 }
 
+public struct UsageSubWindow: Sendable, Equatable {
+  public let usedPercent: Double
+  public let windowDurationMinutes: Int
+  public let resetsAt: Date?
+
+  public init(
+    usedPercent: Double,
+    windowDurationMinutes: Int,
+    resetsAt: Date?
+  ) {
+    self.usedPercent = usedPercent
+    self.windowDurationMinutes = windowDurationMinutes
+    self.resetsAt = resetsAt
+  }
+
+  public var remainingPercent: Double {
+    max(0, 100 - usedPercent)
+  }
+}
+
 public struct UsageSnapshot: Sendable, Equatable {
   public let usedPercent: Double
   public let windowDurationMinutes: Int
@@ -52,6 +72,7 @@ public struct UsageSnapshot: Sendable, Equatable {
   public let planType: String?
   public let limitName: String?
   public let reachedLimitType: String?
+  public let fiveHourWindow: UsageSubWindow?
 
   public init(
     usedPercent: Double,
@@ -59,7 +80,8 @@ public struct UsageSnapshot: Sendable, Equatable {
     resetsAt: Date?,
     planType: String?,
     limitName: String?,
-    reachedLimitType: String?
+    reachedLimitType: String?,
+    fiveHourWindow: UsageSubWindow? = nil
   ) {
     self.usedPercent = usedPercent
     self.windowDurationMinutes = windowDurationMinutes
@@ -67,6 +89,7 @@ public struct UsageSnapshot: Sendable, Equatable {
     self.planType = planType
     self.limitName = limitName
     self.reachedLimitType = reachedLimitType
+    self.fiveHourWindow = fiveHourWindow
   }
 
   public var remainingPercent: Double {
@@ -94,6 +117,8 @@ public enum UsageSelectionError: LocalizedError, Equatable {
 public enum WeeklyUsageSelector {
   private static let weeklyWindowMinutes = 7 * 24 * 60
   private static let acceptedWindowRange = (6 * 24 * 60)...(8 * 24 * 60)
+  private static let fiveHourWindowMinutes = 5 * 60
+  private static let fiveHourWindowRange = (4 * 60)...(6 * 60)
 
   private struct Candidate {
     let snapshot: CodexRateLimitSnapshot
@@ -156,8 +181,50 @@ public enum WeeklyUsageSelector {
       resetsAt: resetsAt,
       planType: selected.snapshot.planType ?? accountPlanType,
       limitName: selected.sourceName,
-      reachedLimitType: selected.snapshot.rateLimitReachedType
+      reachedLimitType: selected.snapshot.rateLimitReachedType,
+      fiveHourWindow: selectFiveHourWindow(from: candidates)
     )
+  }
+
+  private static func selectFiveHourWindow(
+    from candidates: [Candidate]
+  ) -> UsageSubWindow? {
+    let fiveHourCandidates = candidates.filter {
+      guard let duration = $0.window.windowDurationMins,
+        $0.window.usedPercent != nil
+      else {
+        return false
+      }
+      return fiveHourWindowRange.contains(duration)
+    }
+
+    guard let selected = fiveHourCandidates.min(by: fiveHourSort),
+      let rawUsedPercent = selected.window.usedPercent
+    else {
+      return nil
+    }
+
+    return UsageSubWindow(
+      usedPercent: min(100, max(0, rawUsedPercent)),
+      windowDurationMinutes: selected.window.windowDurationMins
+        ?? fiveHourWindowMinutes,
+      resetsAt: selected.window.resetsAt.map {
+        Date(timeIntervalSince1970: TimeInterval($0))
+      }
+    )
+  }
+
+  private static func fiveHourSort(_ lhs: Candidate, _ rhs: Candidate) -> Bool {
+    let leftDistance = abs(
+      (lhs.window.windowDurationMins ?? 0) - fiveHourWindowMinutes
+    )
+    let rightDistance = abs(
+      (rhs.window.windowDurationMins ?? 0) - fiveHourWindowMinutes
+    )
+    if leftDistance != rightDistance {
+      return leftDistance < rightDistance
+    }
+    return lhs.sourcePriority < rhs.sourcePriority
   }
 
   private static func appendWindows(
