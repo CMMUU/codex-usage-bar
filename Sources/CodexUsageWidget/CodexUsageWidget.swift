@@ -200,7 +200,7 @@ private struct UsageWidgetView: View {
   private func mediumContent(
     _ snapshot: SharedUsageSnapshot
   ) -> some View {
-    HStack(spacing: 18) {
+    HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 10) {
         header(snapshot)
         usageRing(snapshot)
@@ -208,24 +208,24 @@ private struct UsageWidgetView: View {
 
       Divider()
 
-      VStack(alignment: .leading, spacing: 10) {
-        metricRow(
+      VStack(alignment: .leading, spacing: 7) {
+        compactRow(
           language.text(
             subscription.usesWeeklyWindow ? .weeklyUsed : .windowUsed
           ),
           percentText(snapshot.usedPercent)
         )
-        metricRow(
+        compactRow(
           language.text(.remainingQuota),
           percentText(snapshot.remainingPercent)
         )
         if let fiveHourUsed = snapshot.fiveHourUsedPercent {
-          metricRow(
+          compactRow(
             language.text(.fiveHourLimit),
             percentText(fiveHourUsed)
           )
         }
-        metricRow(
+        compactRow(
           language.text(.resetTime),
           language.resetDisplayText(snapshot.resetsAt)
         )
@@ -316,16 +316,17 @@ private struct UsageWidgetView: View {
     .foregroundStyle(.secondary)
   }
 
-  private func metricRow(
+  private func compactRow(
     _ title: String,
     _ value: String
   ) -> some View {
-    VStack(alignment: .leading, spacing: 2) {
+    HStack(spacing: 4) {
       Text(title)
-        .font(.caption2)
+        .font(.caption)
         .foregroundStyle(.secondary)
+      Spacer(minLength: 4)
       Text(value)
-        .font(.subheadline.weight(.semibold))
+        .font(.caption.weight(.semibold))
         .monospacedDigit()
     }
   }
