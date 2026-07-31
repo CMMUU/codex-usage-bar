@@ -32,6 +32,7 @@ Codex Usage Bar 是一款免费、开源、原生的 macOS 菜单栏应用和 Wi
 ## 功能
 
 - 菜单栏直接显示 Codex 本周已用比例
+- 支持 K3（Kimi for Coding）5 小时窗口额度，可在弹窗下拉框切换订阅，Widget 同步显示
 - 弹窗显示剩余额度和下次重置时间
 - 显示当前套餐和限额名称
 - 每五分钟自动刷新
@@ -42,7 +43,8 @@ Codex Usage Bar 是一款免费、开源、原生的 macOS 菜单栏应用和 Wi
 - 原生 SwiftUI 菜单栏界面
 - 原生 WidgetKit 小组件，可添加到桌面和通知中心
 - 支持小号、中号布局和数据过期提示
-- 不读取浏览器 Cookie，不复制 OAuth Token，不直接读取认证文件
+- Codex 数据：不读取浏览器 Cookie，不复制 OAuth Token，不直接读取认证文件
+- K3 数据：仅读取本机 kimi-code 凭证文件，令牌原地自动刷新，不离开本机
 
 ## 环境要求
 
@@ -132,7 +134,9 @@ Codex Usage Bar：
 - 不直接调用未公开的 ChatGPT HTTP 接口
 - Widget 降级通道仅监听本机回环接口
 
-认证和令牌刷新由本机 Codex app-server 负责。应用只把标准化后的用量比例、
+Codex 数据的认证和令牌刷新由本机 Codex app-server 负责。K3 数据则读取并原地刷新
+`~/.kimi-code/credentials/kimi-code.json` 中的 kimi-code OAuth 凭证（原子写入、0600 权限），
+仅访问 `auth.kimi.com` 与 `api.kimi.com`，令牌不写入日志、不发送至其他服务器。应用只把标准化后的用量比例、
 重置时间、套餐名称和更新时间写入应用私有的 App Group；在 ad-hoc 版本中，
 Widget 通过本机回环接口读取相同的脱敏快照，不传输认证信息。
 

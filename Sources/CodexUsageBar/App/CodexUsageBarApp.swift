@@ -11,6 +11,10 @@ struct CodexUsageBarApp: App {
     ProcessInfo.processInfo.environment["CODEX_USAGE_BAR_DOCUMENTATION_SNAPSHOT"]
   private let documentationSnapshotLanguage =
     ProcessInfo.processInfo.environment["CODEX_USAGE_BAR_DOCUMENTATION_LANGUAGE"]
+  private let documentationSnapshotSubscription =
+    ProcessInfo.processInfo.environment[
+      "CODEX_USAGE_BAR_DOCUMENTATION_SUBSCRIPTION"
+    ]
 
   init() {
     let isDocumentationSnapshot =
@@ -41,7 +45,11 @@ struct CodexUsageBarApp: App {
       )
       .task {
         if let documentationSnapshotPath {
-          viewModel.loadDocumentationPreview()
+          viewModel.loadDocumentationPreview(
+            subscription: UsageSubscription.resolve(
+              documentationSnapshotSubscription
+            )
+          )
           do {
             try DocumentationSnapshot.render(
               viewModel: viewModel,

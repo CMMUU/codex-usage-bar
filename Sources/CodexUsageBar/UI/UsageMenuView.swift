@@ -10,6 +10,7 @@ struct UsageMenuView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       header
+      subscriptionPicker
       usageSection
 
       if let errorMessage = viewModel.errorDisplayText(for: language) {
@@ -33,11 +34,16 @@ struct UsageMenuView: View {
   private var header: some View {
     HStack {
       VStack(alignment: .leading, spacing: 3) {
-        Text("CODEX")
+        Text(viewModel.selectedSubscription.displayName.uppercased())
           .font(.system(size: 18, weight: .bold, design: .rounded))
-        Text(language.text(.subtitle))
-          .font(.caption)
-          .foregroundStyle(.secondary)
+        Text(
+          language.text(
+            viewModel.selectedSubscription.usesWeeklyWindow
+              ? .subtitle : .k3Subtitle
+          )
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
       }
 
       Spacer()
@@ -54,11 +60,51 @@ struct UsageMenuView: View {
     }
   }
 
+  private var subscriptionPicker: some View {
+    Menu {
+      ForEach(UsageSubscription.allCases) { subscription in
+        Button {
+          viewModel.selectSubscription(subscription)
+        } label: {
+          HStack {
+            Text(subscription.displayName)
+            if subscription == viewModel.selectedSubscription {
+              Image(systemName: "checkmark")
+            }
+          }
+        }
+      }
+    } label: {
+      HStack(spacing: 6) {
+        Text(viewModel.selectedSubscription.displayName)
+          .font(.subheadline.weight(.semibold))
+        Spacer()
+        Image(systemName: "chevron.up.chevron.down")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 7)
+      .background(
+        .secondary.opacity(0.12),
+        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+      )
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(language.text(.subscriptionPicker))
+  }
+
   private var usageSection: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(alignment: .firstTextBaseline) {
-        Text(language.text(.weeklyUsed))
-          .font(.headline)
+        Text(
+          language.text(
+            viewModel.selectedSubscription.usesWeeklyWindow
+              ? .weeklyUsed : .windowUsed
+          )
+        )
+        .font(.headline)
         Spacer()
         Text(percentText(viewModel.snapshot?.usedPercent))
           .font(.system(size: 26, weight: .semibold, design: .rounded))

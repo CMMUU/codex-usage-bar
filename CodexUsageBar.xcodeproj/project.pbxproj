@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		04ACFF3F353C44F11D7A9FEC /* MenuBarLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715B1A9DFACEDD913D307D75 /* MenuBarLabel.swift */; };
+		0BAF8E4744CBDB8CA0C83C50 /* KimiUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28372137E754014A43D41062 /* KimiUsageClient.swift */; };
 		118A4F7CB169754091C560AE /* CodexUsageBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCE3BE4C8AEFD6DBBEDDE34 /* CodexUsageBarApp.swift */; };
 		1D455EC2C019C40DACA5FD1A /* CodexAppServerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B766DA68E8BCCD5AEB83F11 /* CodexAppServerClient.swift */; };
 		272F2E3A48F89C9FEA53F25E /* libCodexUsageCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B62E6AACDE388B3D9F68AC13 /* libCodexUsageCore.a */; };
@@ -28,6 +29,7 @@
 		DA49989DBBE96ECB1761F99C /* libCodexUsageShared.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 464C371BD43D481345921981 /* libCodexUsageShared.a */; };
 		F0F9459FB505DF4E428B5C1B /* CodexUsageWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 40D04FF7EE0775B37B299FEC /* CodexUsageWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F5670BE71FF3872AED5ED4AE /* CodexModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2598D59EB5DCF8B1060DE846 /* CodexModels.swift */; };
+		F5DA4D7C405913D0324BA5BB /* UsageSubscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +80,7 @@
 /* Begin PBXFileReference section */
 		0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUsageSnapshot.swift; sourceTree = "<group>"; };
 		2598D59EB5DCF8B1060DE846 /* CodexModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexModels.swift; sourceTree = "<group>"; };
+		28372137E754014A43D41062 /* KimiUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiUsageClient.swift; sourceTree = "<group>"; };
 		2B766DA68E8BCCD5AEB83F11 /* CodexAppServerClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexAppServerClient.swift; sourceTree = "<group>"; };
 		30702127D771354F007969A4 /* WidgetLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetLanguage.swift; sourceTree = "<group>"; };
 		3F9854879767FA111E08BD03 /* CodexExecutableLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexExecutableLocator.swift; sourceTree = "<group>"; };
@@ -92,6 +95,7 @@
 		A06D789516C01E0E027B38FF /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		B62E6AACDE388B3D9F68AC13 /* libCodexUsageCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCodexUsageCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUsageStore.swift; sourceTree = "<group>"; };
+		CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSubscription.swift; sourceTree = "<group>"; };
 		CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalUsageSnapshotBridge.swift; sourceTree = "<group>"; };
 		E9F0D22719518AF71134EA29 /* CodexUsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexUsageBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F87E3021DF7F9A701E8FDA81 /* CodexUsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageWidget.swift; sourceTree = "<group>"; };
@@ -162,6 +166,7 @@
 				2B766DA68E8BCCD5AEB83F11 /* CodexAppServerClient.swift */,
 				3F9854879767FA111E08BD03 /* CodexExecutableLocator.swift */,
 				2598D59EB5DCF8B1060DE846 /* CodexModels.swift */,
+				28372137E754014A43D41062 /* KimiUsageClient.swift */,
 			);
 			name = CodexUsageCore;
 			path = Sources/CodexUsageCore;
@@ -195,6 +200,7 @@
 				CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */,
 				0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */,
 				C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */,
+				CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */,
 				30702127D771354F007969A4 /* WidgetLanguage.swift */,
 			);
 			name = CodexUsageShared;
@@ -409,6 +415,7 @@
 				3EB9B8473461E84AC7D12573 /* LocalUsageSnapshotBridge.swift in Sources */,
 				4E30216F25E52DFB4694ACC5 /* SharedUsageSnapshot.swift in Sources */,
 				551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */,
+				F5DA4D7C405913D0324BA5BB /* UsageSubscription.swift in Sources */,
 				B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -420,6 +427,7 @@
 				1D455EC2C019C40DACA5FD1A /* CodexAppServerClient.swift in Sources */,
 				5207762E1C66FF0C8B645971 /* CodexExecutableLocator.swift in Sources */,
 				F5670BE71FF3872AED5ED4AE /* CodexModels.swift in Sources */,
+				0BAF8E4744CBDB8CA0C83C50 /* KimiUsageClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

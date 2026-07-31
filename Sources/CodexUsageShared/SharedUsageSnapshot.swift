@@ -7,6 +7,7 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
   public let limitName: String?
   public let updatedAt: Date
   public let languageCode: String?
+  public let subscriptionID: String?
 
   public init(
     usedPercent: Double,
@@ -14,7 +15,8 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
     planType: String?,
     limitName: String?,
     updatedAt: Date,
-    languageCode: String? = nil
+    languageCode: String? = nil,
+    subscriptionID: String? = nil
   ) {
     self.usedPercent = min(100, max(0, usedPercent))
     self.resetsAt = resetsAt
@@ -22,6 +24,7 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
     self.limitName = limitName
     self.updatedAt = updatedAt
     self.languageCode = languageCode
+    self.subscriptionID = subscriptionID
   }
 
   public var remainingPercent: Double {

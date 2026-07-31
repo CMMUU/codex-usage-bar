@@ -13,8 +13,10 @@ final class UsageViewModel: ObservableObject {
   @Published private(set) var lastUpdated: Date?
   @Published private(set) var launchAtLoginEnabled = false
   @Published private(set) var launchAtLoginErrorDetails: String?
+  @Published private(set) var selectedSubscription: UsageSubscription
 
   private let client: CodexAppServerClient
+  private let kimiClient: KimiUsageClient
   private let sharedUsageStore: SharedUsageStore
   private let sharedWidgetPreferencesStore: SharedWidgetPreferencesStore
   private let localUsageServer: LocalUsageSnapshotServer
@@ -24,6 +26,7 @@ final class UsageViewModel: ObservableObject {
 
   init(
     client: CodexAppServerClient = CodexAppServerClient(),
+    kimiClient: KimiUsageClient = KimiUsageClient(),
     sharedUsageStore: SharedUsageStore = SharedUsageStore(),
     sharedWidgetPreferencesStore: SharedWidgetPreferencesStore =
       SharedWidgetPreferencesStore(),
@@ -31,10 +34,14 @@ final class UsageViewModel: ObservableObject {
     displayLanguage: AppLanguage = .systemDefault
   ) {
     self.client = client
+    self.kimiClient = kimiClient
     self.sharedUsageStore = sharedUsageStore
     self.sharedWidgetPreferencesStore = sharedWidgetPreferencesStore
     self.localUsageServer = localUsageServer
     self.displayLanguage = displayLanguage
+    selectedSubscription = UsageSubscription.resolve(
+      sharedWidgetPreferencesStore.load()?.subscriptionID
+    )
   }
 
   deinit {
@@ -43,10 +50,25 @@ final class UsageViewModel: ObservableObject {
   }
 
   var menuBarText: String {
+    let name = selectedSubscription.displayName
     if let snapshot {
-      return "Codex \(Int(snapshot.usedPercent.rounded()))%"
+      return "\(name) \(Int(snapshot.usedPercent.rounded()))%"
     }
-    return isRefreshing ? "Codex …" : "Codex --"
+    return isRefreshing ? "\(name) …" : "\(name) --"
+  }
+
+  func selectSubscription(_ subscription: UsageSubscription) {
+    guard subscription != selectedSubscription else {
+      return
+    }
+    selectedSubscription = subscription
+    snapshot = nil
+    lastUpdated = nil
+    errorMessage = nil
+    persistWidgetPreferences()
+    Task {
+      await refresh()
+    }
   }
 
   func planDisplayName(for language: AppLanguage) -> String {
@@ -82,13 +104,7 @@ final class UsageViewModel: ObservableObject {
     displayLanguage = language
     localUsageServer.updateLanguage(language.rawValue)
 
-    do {
-      try sharedWidgetPreferencesStore.save(
-        SharedWidgetPreferences(languageCode: language.rawValue)
-      )
-    } catch {
-      fputs("Widget language update failed: \(error)\n", stderr)
-    }
+    persistWidgetPreferences()
 
     guard languageChanged else {
       WidgetCenter.shared.reloadTimelines(
@@ -138,7 +154,13 @@ final class UsageViewModel: ObservableObject {
     }
 
     do {
-      let fetchedSnapshot = try await client.fetchUsage()
+      let fetchedSnapshot: UsageSnapshot
+      switch selectedSubscription {
+      case .codex:
+        fetchedSnapshot = try await client.fetchUsage()
+      case .k3:
+        fetchedSnapshot = try await kimiClient.fetchUsage()
+      }
       let updatedAt = Date()
       snapshot = fetchedSnapshot
       lastUpdated = updatedAt
@@ -167,26 +189,49 @@ final class UsageViewModel: ObservableObject {
     refreshLaunchAtLoginStatus()
   }
 
-  func loadDocumentationPreview() {
+  func loadDocumentationPreview(
+    subscription: UsageSubscription = .codex
+  ) {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60) ?? .current
 
-    snapshot = UsageSnapshot(
-      usedPercent: 64,
-      windowDurationMinutes: 10_080,
-      resetsAt: calendar.date(
-        from: DateComponents(
-          year: 2026,
-          month: 8,
-          day: 2,
-          hour: 12,
-          minute: 30
-        )
-      ),
-      planType: "pro",
-      limitName: "Codex",
-      reachedLimitType: nil
-    )
+    selectedSubscription = subscription
+    switch subscription {
+    case .codex:
+      snapshot = UsageSnapshot(
+        usedPercent: 64,
+        windowDurationMinutes: 10_080,
+        resetsAt: calendar.date(
+          from: DateComponents(
+            year: 2026,
+            month: 8,
+            day: 2,
+            hour: 12,
+            minute: 30
+          )
+        ),
+        planType: "pro",
+        limitName: "Codex",
+        reachedLimitType: nil
+      )
+    case .k3:
+      snapshot = UsageSnapshot(
+        usedPercent: 21,
+        windowDurationMinutes: 300,
+        resetsAt: calendar.date(
+          from: DateComponents(
+            year: 2026,
+            month: 7,
+            day: 31,
+            hour: 11,
+            minute: 22
+          )
+        ),
+        planType: "intermediate",
+        limitName: "K3",
+        reachedLimitType: nil
+      )
+    }
     lastUpdated = calendar.date(
       from: DateComponents(
         year: 2026,
@@ -225,6 +270,19 @@ final class UsageViewModel: ObservableObject {
     launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
   }
 
+  private func persistWidgetPreferences() {
+    do {
+      try sharedWidgetPreferencesStore.save(
+        SharedWidgetPreferences(
+          languageCode: displayLanguage.rawValue,
+          subscriptionID: selectedSubscription.rawValue
+        )
+      )
+    } catch {
+      fputs("Widget preferences update failed: \(error)\n", stderr)
+    }
+  }
+
   private func publishWidgetSnapshot(
     _ snapshot: UsageSnapshot,
     updatedAt: Date
@@ -235,7 +293,8 @@ final class UsageViewModel: ObservableObject {
       planType: snapshot.planType,
       limitName: snapshot.limitName,
       updatedAt: updatedAt,
-      languageCode: displayLanguage.rawValue
+      languageCode: displayLanguage.rawValue,
+      subscriptionID: selectedSubscription.rawValue
     )
 
     localUsageServer.update(sharedSnapshot)

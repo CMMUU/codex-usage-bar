@@ -12,6 +12,9 @@ struct CodexUsageVerifier {
       if CommandLine.arguments.contains("--integration") {
         try await runIntegrationCheck()
       }
+      if CommandLine.arguments.contains("--kimi-integration") {
+        try await runKimiIntegrationCheck()
+      }
       print("验证完成：全部通过")
     } catch {
       fputs("验证失败：\(error.localizedDescription)\n", stderr)
@@ -142,7 +145,86 @@ struct CodexUsageVerifier {
 
     try verifyExecutableOverride()
     try verifySharedUsageStore()
+    try verifyKimiUsageMapping()
     try verifyAppLanguage()
+  }
+
+  private static func verifyKimiUsageMapping() throws {
+    let payload = """
+      {
+        "user": {
+          "userId": "u1",
+          "membership": { "level": "LEVEL_INTERMEDIATE" }
+        },
+        "usage": {
+          "limit": "100",
+          "used": "17",
+          "remaining": "83",
+          "resetTime": "2026-07-31T03:22:24.930601Z"
+        },
+        "limits": [
+          {
+            "window": { "duration": 300, "timeUnit": "TIME_UNIT_MINUTE" },
+            "detail": {
+              "limit": "100",
+              "used": "20",
+              "remaining": "80",
+              "resetTime": "2026-07-31T02:22:24.930601Z"
+            }
+          }
+        ]
+      }
+      """
+    let snapshot = try KimiUsageMapper.snapshot(from: Data(payload.utf8))
+    try expect(snapshot.usedPercent == 17, "K3 解析已用百分比")
+    try expect(snapshot.remainingPercent == 83, "K3 计算剩余额度")
+    try expect(snapshot.planType == "intermediate", "K3 映射套餐等级")
+    try expect(snapshot.limitName == "K3", "K3 设置限额名称")
+    try expect(snapshot.windowDurationMinutes == 300, "K3 读取窗口长度")
+
+    let resetFormatter = ISO8601DateFormatter()
+    resetFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    try expect(
+      snapshot.resetsAt == resetFormatter.date(
+        from: "2026-07-31T03:22:24.930601Z"
+      ),
+      "K3 解析重置时间"
+    )
+
+    do {
+      _ = try KimiUsageMapper.snapshot(
+        from: Data("{\"usage\":{\"limit\":\"0\",\"used\":\"1\"}}".utf8)
+      )
+      throw VerificationFailure("K3 拒绝无效额度数据")
+    } catch KimiUsageClientError.invalidResponse {
+      print("PASS K3 拒绝无效额度数据")
+    }
+
+    let credentials = try JSONDecoder().decode(
+      KimiCredentials.self,
+      from: Data(
+        "{\"access_token\":\"a\",\"refresh_token\":\"b\",\"expires_at\":4102444800}"
+          .utf8
+      )
+    )
+    try expect(
+      credentials.isAccessTokenValid(
+        at: Date(timeIntervalSince1970: 1_700_000_000)
+      ),
+      "K3 凭证在有效期内"
+    )
+    try expect(
+      !credentials.isAccessTokenValid(
+        at: Date(timeIntervalSince1970: 4_103_000_000)
+      ),
+      "K3 凭证过期识别"
+    )
+    try expect(
+      UsageSubscription.resolve("k3") == .k3
+        && UsageSubscription.resolve(nil) == .codex
+        && UsageSubscription.resolve("unknown") == .codex,
+      "订阅选择解析与兜底"
+    )
   }
 
   private static func runIntegrationCheck() async throws {
@@ -152,6 +234,17 @@ struct CodexUsageVerifier {
     print(
       "PASS 实时 Codex 数据：已用 \(Int(snapshot.usedPercent.rounded()))%，"
         + "剩余 \(Int(snapshot.remainingPercent.rounded()))%"
+    )
+  }
+
+  private static func runKimiIntegrationCheck() async throws {
+    let snapshot = try await KimiUsageClient().fetchUsage()
+    try expect((0...100).contains(snapshot.usedPercent), "K3 实时使用率范围")
+    try expect(snapshot.limitName == "K3", "K3 实时限额名称")
+    print(
+      "PASS 实时 K3 数据：已用 \(Int(snapshot.usedPercent.rounded()))%，"
+        + "剩余 \(Int(snapshot.remainingPercent.rounded()))%，"
+        + "套餐 \(snapshot.planType ?? "未知")"
     )
   }
 
@@ -226,6 +319,25 @@ struct CodexUsageVerifier {
     try expect(
       preferencesStore.load() == preferences,
       "独立持久化 Widget 语言设置"
+    )
+
+    let k3Preferences = SharedWidgetPreferences(
+      languageCode: AppLanguage.simplifiedChinese.rawValue,
+      subscriptionID: UsageSubscription.k3.rawValue
+    )
+    try preferencesStore.save(k3Preferences)
+    try expect(
+      preferencesStore.load() == k3Preferences,
+      "持久化 Widget 订阅选择"
+    )
+
+    let legacyPreferences = try JSONDecoder().decode(
+      SharedWidgetPreferences.self,
+      from: Data("{\"languageCode\":\"en\"}".utf8)
+    )
+    try expect(
+      legacyPreferences.subscriptionID == nil,
+      "兼容不含订阅字段的旧偏好"
     )
 
     let legacySnapshotData = try JSONSerialization.data(

@@ -11,7 +11,12 @@ struct MenuBarLabel: View {
       Text(viewModel.menuBarText)
         .monospacedDigit()
     }
-    .accessibilityLabel(language.text(.menuBarAccessibility))
+    .accessibilityLabel(
+      language.text(
+        viewModel.selectedSubscription.usesWeeklyWindow
+          ? .menuBarAccessibility : .k3MenuBarAccessibility
+      )
+    )
     .accessibilityValue(viewModel.menuBarText)
   }
 }

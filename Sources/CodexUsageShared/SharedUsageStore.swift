@@ -66,9 +66,11 @@ public struct SharedUsageStore {
 
 public struct SharedWidgetPreferences: Codable, Equatable, Sendable {
   public let languageCode: String
+  public let subscriptionID: String?
 
-  public init(languageCode: String) {
+  public init(languageCode: String, subscriptionID: String? = nil) {
     self.languageCode = languageCode
+    self.subscriptionID = subscriptionID
   }
 }
 

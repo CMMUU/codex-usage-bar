@@ -34,6 +34,7 @@ your authentication token.
 ## Features
 
 - Weekly Codex usage and remaining capacity at a glance
+- K3 (Kimi for Coding) 5-hour window usage, switchable from the popover dropdown and shared with the widgets
 - Next quota reset time
 - Current plan and limit name
 - Automatic refresh every five minutes
@@ -44,7 +45,8 @@ your authentication token.
 - Native SwiftUI menu bar interface
 - Native WidgetKit widgets for the desktop and Notification Center
 - Small and medium widget layouts with stale-data indication
-- No browser cookies, copied OAuth tokens, or direct token-file access
+- Codex data: no browser cookies, copied OAuth tokens, or direct token-file access
+- K3 data: reads the local kimi-code credentials file only; tokens are refreshed in place and never leave your Mac
 
 ## Requirements
 
@@ -140,8 +142,11 @@ Codex Usage Bar:
 - does not call undocumented ChatGPT HTTP endpoints directly
 - limits the widget fallback bridge to the local loopback interface
 
-It delegates authentication and token refresh to the locally installed Codex
-app-server. The app writes only the normalized usage percentage, reset time,
+For Codex data, it delegates authentication and token refresh to the locally
+installed Codex app-server. For K3 data, it reads and refreshes the kimi-code
+OAuth credentials in `~/.kimi-code/credentials/kimi-code.json` in place
+(atomic writes, 0600 permissions) and calls only `auth.kimi.com` and
+`api.kimi.com`; tokens are never logged or sent elsewhere. The app writes only the normalized usage percentage, reset time,
 plan label, and update time to its private App Group container. In ad-hoc
 builds, the widget reads the same sanitized snapshot over local loopback
 without transferring authentication data.

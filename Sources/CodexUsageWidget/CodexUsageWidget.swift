@@ -6,15 +6,18 @@ private struct UsageTimelineEntry: TimelineEntry {
   let date: Date
   let snapshot: SharedUsageSnapshot?
   let languageCode: String?
+  let subscriptionID: String?
 
   init(
     date: Date,
     snapshot: SharedUsageSnapshot?,
-    languageCode: String? = nil
+    languageCode: String? = nil,
+    subscriptionID: String? = nil
   ) {
     self.date = date
     self.snapshot = snapshot
     self.languageCode = languageCode
+    self.subscriptionID = subscriptionID
   }
 }
 
@@ -41,12 +44,13 @@ private struct UsageTimelineProvider: TimelineProvider {
       completion(UsageTimelineEntry(date: Date(), snapshot: .placeholder))
       return
     }
-    loadSnapshot { snapshot, languageCode in
+    loadSnapshot { snapshot, languageCode, subscriptionID in
       completion(
         UsageTimelineEntry(
           date: Date(),
           snapshot: snapshot,
-          languageCode: languageCode
+          languageCode: languageCode,
+          subscriptionID: subscriptionID
         )
       )
     }
@@ -56,12 +60,13 @@ private struct UsageTimelineProvider: TimelineProvider {
     in context: Context,
     completion: @escaping (Timeline<UsageTimelineEntry>) -> Void
   ) {
-    loadSnapshot { snapshot, languageCode in
+    loadSnapshot { snapshot, languageCode, subscriptionID in
       let now = Date()
       let entry = UsageTimelineEntry(
         date: now,
         snapshot: snapshot,
-        languageCode: languageCode
+        languageCode: languageCode,
+        subscriptionID: subscriptionID
       )
       let routineRefresh = now.addingTimeInterval(15 * 60)
       let refreshDate =
@@ -76,15 +81,17 @@ private struct UsageTimelineProvider: TimelineProvider {
   }
 
   private func loadSnapshot(
-    completion: @escaping (SharedUsageSnapshot?, String?) -> Void
+    completion: @escaping (SharedUsageSnapshot?, String?, String?) -> Void
   ) {
-    let sharedLanguageCode =
-      appGroupPreferencesStore.load()?.languageCode
+    let sharedPreferences = appGroupPreferencesStore.load()
+    let sharedLanguageCode = sharedPreferences?.languageCode
+    let sharedSubscriptionID = sharedPreferences?.subscriptionID
 
     if let snapshot = appGroupStore.load() {
       completion(
         snapshot,
-        sharedLanguageCode ?? snapshot.languageCode
+        sharedLanguageCode ?? snapshot.languageCode,
+        sharedSubscriptionID ?? snapshot.subscriptionID
       )
       return
     }
@@ -96,17 +103,23 @@ private struct UsageTimelineProvider: TimelineProvider {
         ?? sharedLanguageCode
         ?? widgetPreferencesCacheStore.load()?.languageCode
         ?? snapshot?.languageCode
+      let subscriptionID =
+        sharedSubscriptionID
+        ?? snapshot?.subscriptionID
 
       if let networkSnapshot = payload?.snapshot {
         try? widgetCacheStore.save(networkSnapshot)
       }
       if let languageCode {
         try? widgetPreferencesCacheStore.save(
-          SharedWidgetPreferences(languageCode: languageCode)
+          SharedWidgetPreferences(
+            languageCode: languageCode,
+            subscriptionID: subscriptionID
+          )
         )
       }
 
-      completion(snapshot, languageCode)
+      completion(snapshot, languageCode, subscriptionID)
     }
   }
 
@@ -129,6 +142,12 @@ private struct UsageWidgetView: View {
   private var language: AppLanguage {
     AppLanguage.resolve(
       entry.languageCode ?? entry.snapshot?.languageCode
+    )
+  }
+
+  private var subscription: UsageSubscription {
+    UsageSubscription.resolve(
+      entry.snapshot?.subscriptionID ?? entry.subscriptionID
     )
   }
 
@@ -191,7 +210,9 @@ private struct UsageWidgetView: View {
 
       VStack(alignment: .leading, spacing: 10) {
         metricRow(
-          language.text(.weeklyUsed),
+          language.text(
+            subscription.usesWeeklyWindow ? .weeklyUsed : .windowUsed
+          ),
           percentText(snapshot.usedPercent)
         )
         metricRow(
@@ -216,7 +237,7 @@ private struct UsageWidgetView: View {
 
   private var emptyContent: some View {
     VStack(alignment: .leading, spacing: 10) {
-      Label("CODEX", systemImage: "chart.bar.fill")
+      Label(subscription.displayName.uppercased(), systemImage: "chart.bar.fill")
         .font(.headline)
 
       Spacer()
@@ -235,7 +256,7 @@ private struct UsageWidgetView: View {
     _ snapshot: SharedUsageSnapshot
   ) -> some View {
     HStack(spacing: 6) {
-      Text("CODEX")
+      Text(subscription.displayName.uppercased())
         .font(.headline)
       Spacer(minLength: 4)
       if snapshot.isStale() {
