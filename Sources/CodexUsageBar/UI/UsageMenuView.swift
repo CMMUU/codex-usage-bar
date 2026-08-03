@@ -50,13 +50,28 @@ struct UsageMenuView: View {
       Spacer()
 
       HStack(spacing: 10) {
-        if viewModel.isRefreshing {
+        if viewModel.isLanguageSwitching {
+          HStack(spacing: 4) {
+            ProgressView()
+              .controlSize(.small)
+            Text(language.text(.switchingLanguage))
+              .font(.caption2)
+              .foregroundStyle(.secondary)
+          }
+          .accessibilityElement(children: .combine)
+          .accessibilityLabel(language.text(.switchingLanguage))
+        } else if viewModel.isRefreshing {
           ProgressView()
             .controlSize(.small)
             .accessibilityLabel(language.text(.refreshing))
         }
 
-        LanguageSwitcher(language: $language)
+        LanguageSwitcher(
+          language: $language,
+          pendingLanguage: viewModel.pendingDisplayLanguage,
+          isSwitching: viewModel.isLanguageSwitching,
+          switchingText: language.text(.switchingLanguage)
+        )
       }
     }
   }
@@ -362,6 +377,9 @@ struct UsageMenuView: View {
 
 private struct LanguageSwitcher: View {
   @Binding var language: AppLanguage
+  let pendingLanguage: AppLanguage?
+  let isSwitching: Bool
+  let switchingText: String
 
   var body: some View {
     HStack(spacing: 2) {
@@ -390,27 +408,41 @@ private struct LanguageSwitcher: View {
     value: AppLanguage,
     accessibilityLabel: String
   ) -> some View {
-    Button {
+    let isPending = isSwitching && pendingLanguage == value
+
+    return Button {
       language = value
     } label: {
-      Text(title)
-        .font(.system(size: 10, weight: .semibold, design: .rounded))
-        .foregroundStyle(language == value ? .primary : .secondary)
-        .frame(width: 32, height: 20)
-        .background(
-          language == value
-            ? Color(nsColor: .controlBackgroundColor)
-            : .clear,
-          in: RoundedRectangle(cornerRadius: 5, style: .continuous)
-        )
-        .shadow(
-          color: language == value ? .black.opacity(0.12) : .clear,
-          radius: 1,
-          y: 1
-        )
+      ZStack {
+        Text(title)
+          .font(.system(size: 10, weight: .semibold, design: .rounded))
+          .opacity(isPending ? 0 : 1)
+
+        if isPending {
+          ProgressView()
+            .controlSize(.mini)
+            .accessibilityHidden(true)
+        }
+      }
+      .foregroundStyle(language == value ? .primary : .secondary)
+      .frame(width: 32, height: 20)
+      .background(
+        language == value
+          ? Color(nsColor: .controlBackgroundColor)
+          : .clear,
+        in: RoundedRectangle(cornerRadius: 5, style: .continuous)
+      )
+      .shadow(
+        color: language == value ? .black.opacity(0.12) : .clear,
+        radius: 1,
+        y: 1
+      )
     }
     .buttonStyle(.plain)
+    .disabled(isSwitching)
     .accessibilityLabel(accessibilityLabel)
+    .accessibilityValue(isPending ? switchingText : "")
+    .help(isPending ? switchingText : accessibilityLabel)
   }
 }
 

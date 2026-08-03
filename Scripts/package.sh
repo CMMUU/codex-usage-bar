@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Codex Usage Bar"
-VERSION="${VERSION:-0.3.1}"
+VERSION="${VERSION:-0.3.2}"
 BUILD_NUMBER="${BUILD_NUMBER:-2}"
 APP_GROUP_IDENTIFIER="${APP_GROUP_IDENTIFIER:-group.io.cmmuu.codex-usage-bar}"
 CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"

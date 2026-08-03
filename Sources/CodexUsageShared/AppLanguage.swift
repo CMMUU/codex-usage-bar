@@ -56,6 +56,10 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
       return "正在刷新"
     case (.english, .refreshing):
       return "Refreshing"
+    case (.simplifiedChinese, .switchingLanguage):
+      return "正在切换"
+    case (.english, .switchingLanguage):
+      return "Switching"
     case (.simplifiedChinese, .weeklyUsed):
       return "本周已用"
     case (.english, .weeklyUsed):
@@ -230,6 +234,7 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
 public enum AppText: Sendable {
   case subtitle
   case refreshing
+  case switchingLanguage
   case weeklyUsed
   case remainingQuota
   case resetTime
@@ -255,4 +260,71 @@ public enum AppText: Sendable {
   case k3Subtitle
   case windowUsed
   case fiveHourLimit
+}
+
+public enum LanguageSwitchResult: Equatable, Sendable {
+  case unchanged
+  case ignored
+  case queued
+  case applied(AppLanguage)
+}
+
+/// Keeps language changes atomic while a usage refresh is in flight.
+public struct LanguageTransitionState: Equatable, Sendable {
+  public private(set) var current: AppLanguage
+  public private(set) var pending: AppLanguage?
+  public private(set) var isWaitingForRefresh: Bool
+
+  public init(current: AppLanguage) {
+    self.current = current
+    pending = nil
+    isWaitingForRefresh = false
+  }
+
+  @discardableResult
+  public mutating func request(
+    _ language: AppLanguage,
+    whileRefreshing: Bool
+  ) -> LanguageSwitchResult {
+    guard !isWaitingForRefresh else {
+      // Once a request has been accepted, the UI locks the switcher until the
+      // refresh transaction completes. Ignore stale or duplicate taps rather
+      // than cancelling the pending request.
+      return .ignored
+    }
+
+    guard language != current else {
+      pending = nil
+      isWaitingForRefresh = false
+      return .unchanged
+    }
+
+    guard whileRefreshing else {
+      current = language
+      pending = nil
+      isWaitingForRefresh = false
+      return .applied(language)
+    }
+
+    pending = language
+    isWaitingForRefresh = true
+    return .queued
+  }
+
+  @discardableResult
+  public mutating func finishRefreshing() -> LanguageSwitchResult {
+    guard let pending else {
+      isWaitingForRefresh = false
+      return .unchanged
+    }
+
+    self.pending = nil
+    isWaitingForRefresh = false
+    guard pending != current else {
+      return .unchanged
+    }
+
+    current = pending
+    return .applied(pending)
+  }
 }

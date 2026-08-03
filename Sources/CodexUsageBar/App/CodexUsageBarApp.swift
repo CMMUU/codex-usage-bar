@@ -5,8 +5,6 @@ import SwiftUI
 struct CodexUsageBarApp: App {
   @StateObject private var viewModel = UsageViewModel()
   @StateObject private var updateManager: UpdateManager
-  @AppStorage(AppLanguage.storageKey)
-  private var storedLanguage = AppLanguage.systemDefault.rawValue
   private let documentationSnapshotPath =
     ProcessInfo.processInfo.environment["CODEX_USAGE_BAR_DOCUMENTATION_SNAPSHOT"]
   private let documentationSnapshotLanguage =
@@ -62,7 +60,6 @@ struct CodexUsageBarApp: App {
           }
           NSApplication.shared.terminate(nil)
         } else {
-          viewModel.setDisplayLanguage(language)
           await viewModel.activate()
         }
       }
@@ -71,16 +68,13 @@ struct CodexUsageBarApp: App {
   }
 
   private var language: AppLanguage {
-    AppLanguage.resolve(storedLanguage)
+    viewModel.displayLanguage
   }
 
   private var languageBinding: Binding<AppLanguage> {
     Binding(
-      get: { AppLanguage.resolve(storedLanguage) },
-      set: {
-        storedLanguage = $0.rawValue
-        viewModel.setDisplayLanguage($0)
-      }
+      get: { viewModel.displayLanguage },
+      set: { viewModel.setDisplayLanguage($0) }
     )
   }
 

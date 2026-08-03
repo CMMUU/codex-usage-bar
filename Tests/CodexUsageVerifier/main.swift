@@ -466,6 +466,53 @@ struct CodexUsageVerifier {
         && AppLanguage.english.text(.updateAvailable) == "New version",
       "提供中英文新版本提示"
     )
+    try expect(
+      AppLanguage.simplifiedChinese.text(.switchingLanguage) == "正在切换"
+        && AppLanguage.english.text(.switchingLanguage) == "Switching",
+      "提供中英文切换状态文案"
+    )
+    try verifyLanguageTransition()
+  }
+
+  private static func verifyLanguageTransition() throws {
+    var transition = LanguageTransitionState(current: .simplifiedChinese)
+
+    try expect(
+      transition.request(.english, whileRefreshing: true) == .queued,
+      "刷新期间暂存语言切换"
+    )
+    try expect(
+      transition.current == .simplifiedChinese
+        && transition.pending == .english
+        && transition.isWaitingForRefresh,
+      "暂存期间保持当前界面语言"
+    )
+    try expect(
+      transition.finishRefreshing() == .applied(.english)
+        && transition.current == .english
+        && !transition.isWaitingForRefresh,
+      "刷新完成后应用待切换语言"
+    )
+    try expect(
+      transition.request(.simplifiedChinese, whileRefreshing: false)
+        == .applied(.simplifiedChinese),
+      "空闲状态立即应用语言切换"
+    )
+    try expect(
+      transition.request(.english, whileRefreshing: true) == .queued
+        && transition.request(.simplifiedChinese, whileRefreshing: true)
+          == .ignored
+        && transition.pending == .english
+        && transition.isWaitingForRefresh,
+      "切换期间忽略快速重复点击"
+    )
+    try expect(
+      transition.finishRefreshing() == .applied(.english)
+        && transition.current == .english
+        && transition.pending == nil
+        && !transition.isWaitingForRefresh,
+      "快速点击后仍应用已确认语言"
+    )
   }
 
   private static func verifyLocalSnapshotBridge() async throws {
