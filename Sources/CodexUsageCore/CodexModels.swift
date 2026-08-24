@@ -17,11 +17,11 @@ struct RPCErrorPayload: Decodable, Sendable, LocalizedError {
 
 struct AccountReadResult: Decodable, Sendable {
   let account: CodexAccount?
-  let requiresOpenaiAuth: Bool
+  let requiresOpenaiAuth: Bool?
 }
 
 struct CodexAccount: Decodable, Sendable {
-  let type: String
+  let type: String?
   let planType: String?
 }
 
@@ -43,6 +43,85 @@ struct CodexRateLimitWindow: Decodable, Sendable {
   let usedPercent: Double?
   let windowDurationMins: Int?
   let resetsAt: Int64?
+
+  private enum CodingKeys: String, CodingKey {
+    case usedPercent
+    case windowDurationMins
+    case windowDurationSeconds
+    case resetsAt
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    usedPercent = try container.decodeFlexibleDouble(forKey: .usedPercent)
+
+    if let minutes = try container.decodeFlexibleInt(
+      forKey: .windowDurationMins
+    ) {
+      windowDurationMins = minutes
+    } else if let seconds = try container.decodeFlexibleInt(
+      forKey: .windowDurationSeconds
+    ) {
+      windowDurationMins = max(1, (seconds + 59) / 60)
+    } else {
+      windowDurationMins = nil
+    }
+
+    resetsAt = try container.decodeFlexibleInt64(forKey: .resetsAt)
+  }
+}
+
+private extension KeyedDecodingContainer {
+  func decodeFlexibleDouble(forKey key: Key) throws -> Double? {
+    do {
+      return try decodeIfPresent(Double.self, forKey: key)
+    } catch {
+      let value = try decodeIfPresent(String.self, forKey: key)
+      return value.flatMap(Double.init)
+    }
+  }
+
+  func decodeFlexibleInt(forKey key: Key) throws -> Int? {
+    do {
+      return try decodeIfPresent(Int.self, forKey: key)
+    } catch {
+      if let value = try decodeIfPresent(String.self, forKey: key),
+        let parsed = Int(value)
+      {
+        return parsed
+      }
+      if let value = try decodeIfPresent(Double.self, forKey: key),
+        value.isFinite,
+        value.rounded() == value
+      {
+        return Int(value)
+      }
+      return nil
+    }
+  }
+
+  func decodeFlexibleInt64(forKey key: Key) throws -> Int64? {
+    do {
+      return try decodeIfPresent(Int64.self, forKey: key)
+    } catch {
+      if let value = try decodeIfPresent(String.self, forKey: key) {
+        if let parsed = Int64(value) {
+          return parsed
+        }
+        let formatter = ISO8601DateFormatter()
+        if let date = formatter.date(from: value) {
+          return Int64(date.timeIntervalSince1970)
+        }
+      }
+      if let value = try decodeIfPresent(Double.self, forKey: key),
+        value.isFinite,
+        value.rounded() == value
+      {
+        return Int64(value)
+      }
+      return nil
+    }
+  }
 }
 
 public struct UsageSubWindow: Sendable, Equatable {

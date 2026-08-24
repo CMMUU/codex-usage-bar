@@ -53,6 +53,7 @@ final class UsageViewModel: ObservableObject {
     selectedSubscription = UsageSubscription.resolve(
       sharedWidgetPreferencesStore.load()?.subscriptionID
     )
+    restoreCachedSnapshot()
   }
 
   deinit {
@@ -82,6 +83,7 @@ final class UsageViewModel: ObservableObject {
     snapshot = nil
     lastUpdated = nil
     errorMessage = nil
+    restoreCachedSnapshot()
     persistWidgetPreferences()
     Task {
       await refresh()
@@ -199,6 +201,37 @@ final class UsageViewModel: ObservableObject {
     }
 
     refreshLaunchAtLoginStatus()
+  }
+
+  private func restoreCachedSnapshot() {
+    guard let cached = sharedUsageStore.load(),
+      UsageSubscription.resolve(cached.subscriptionID) == selectedSubscription
+    else {
+      return
+    }
+
+    let fiveHourWindow: UsageSubWindow?
+    if let usedPercent = cached.fiveHourUsedPercent {
+      fiveHourWindow = UsageSubWindow(
+        usedPercent: usedPercent,
+        windowDurationMinutes: 5 * 60,
+        resetsAt: cached.fiveHourResetsAt
+      )
+    } else {
+      fiveHourWindow = nil
+    }
+
+    snapshot = UsageSnapshot(
+      usedPercent: cached.usedPercent,
+      windowDurationMinutes: cached.windowDurationMinutes
+        ?? (selectedSubscription.usesWeeklyWindow ? 7 * 24 * 60 : 0),
+      resetsAt: cached.resetsAt,
+      planType: cached.planType,
+      limitName: cached.limitName,
+      reachedLimitType: nil,
+      fiveHourWindow: fiveHourWindow
+    )
+    lastUpdated = cached.updatedAt
   }
 
   func loadDocumentationPreview(
@@ -372,6 +405,7 @@ final class UsageViewModel: ObservableObject {
       planType: snapshot.planType,
       limitName: snapshot.limitName,
       updatedAt: updatedAt,
+      windowDurationMinutes: snapshot.windowDurationMinutes,
       languageCode: displayLanguage.rawValue,
       subscriptionID: selectedSubscription.rawValue,
       fiveHourUsedPercent: snapshot.fiveHourWindow?.usedPercent,

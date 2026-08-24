@@ -13,11 +13,41 @@ public actor CodexAppServerClient {
   public func fetchUsage() async throws -> UsageSnapshot {
     let executableURL = try explicitExecutableURL ?? CodexExecutableLocator.resolve()
     let timeout = timeout
+    let deadline = Date().addingTimeInterval(timeout)
 
-    let responses = try await Task.detached(priority: .utility) {
-      try CodexAppServerProbe(executableURL: executableURL).run(timeout: timeout)
-    }.value
+    var lastError: Error?
+    let configurations = CodexAppServerProbeConfiguration.candidates()
 
+    for (index, configuration) in configurations.enumerated() {
+      let remaining = deadline.timeIntervalSinceNow
+      guard remaining > 0 else {
+        break
+      }
+
+      do {
+        let responses = try await Task.detached(priority: .utility) {
+          try CodexAppServerProbe(
+            executableURL: executableURL,
+            arguments: configuration.arguments,
+            environment: configuration.environment
+          ).run(timeout: remaining)
+        }.value
+
+        return try decodeUsage(from: responses)
+      } catch {
+        lastError = error
+        let canRetry = index + 1 < configurations.count
+          && CodexAppServerProbeConfiguration.shouldRetry(after: error)
+        if !canRetry {
+          throw error
+        }
+      }
+    }
+
+    throw lastError ?? CodexAppServerClientError.timeout
+  }
+
+  private func decodeUsage(from responses: [Int: Data]) throws -> UsageSnapshot {
     guard let accountData = responses[1] else {
       throw CodexAppServerClientError.missingResponse("account/read")
     }
@@ -26,6 +56,7 @@ public actor CodexAppServerClient {
     }
 
     let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
     let accountEnvelope = try decoder.decode(
       RPCEnvelope<AccountReadResult>.self,
       from: accountData
@@ -55,6 +86,104 @@ public actor CodexAppServerClient {
       from: rateLimits,
       accountPlanType: accountEnvelope.result?.account?.planType
     )
+  }
+}
+
+private struct CodexAppServerProbeConfiguration: Sendable {
+  let arguments: [String]
+  let environment: [String: String]
+
+  static func candidates() -> [Self] {
+    let environments = CodexAppServerProcessEnvironment.candidates()
+    // Keep the current flag first, then support the equivalent transport form
+    // used by newer Codex CLI builds.
+    let argumentVariants = [
+      ["app-server", "--stdio"],
+      ["app-server", "--listen", "stdio://"],
+    ]
+
+    return argumentVariants.flatMap { arguments in
+      environments.map { environment in
+        Self(arguments: arguments, environment: environment)
+      }
+    }
+  }
+
+  static func shouldRetry(after error: Error) -> Bool {
+    if let rpcError = error as? RPCErrorPayload {
+      // -32603 is the app-server's usual upstream transport wrapper. The
+      // -320xx range includes transient server overload responses.
+      return rpcError.code == -32603
+        || (-32099...(-32000)).contains(rpcError.code)
+    }
+
+    switch error {
+    case CodexAppServerClientError.timeout,
+      CodexAppServerClientError.terminated,
+      CodexAppServerClientError.invalidProtocol:
+      return true
+    default:
+      return false
+    }
+  }
+}
+
+private enum CodexAppServerProcessEnvironment {
+  private static let chatGPTHosts = [
+    "chatgpt.com",
+    "*.chatgpt.com",
+    "chat.openai.com",
+    "*.chat.openai.com",
+  ]
+
+  static func candidates(
+    base: [String: String] = ProcessInfo.processInfo.environment
+  ) -> [[String: String]] {
+    // Prefer the user's normal route. If a stale system proxy blocks only the
+    // ChatGPT backend, retry with a scoped bypass before trying a full direct
+    // route as the last resort.
+    let bypassingSystemProxy = addingChatGPTNoProxy(to: base)
+    let bypassingAllProxies = addingNoProxyWildcard(to: base)
+    var candidates = [base]
+    if bypassingSystemProxy != base {
+      candidates.append(bypassingSystemProxy)
+    }
+    if bypassingAllProxies != base,
+      bypassingAllProxies != bypassingSystemProxy
+    {
+      candidates.append(bypassingAllProxies)
+    }
+    return candidates
+  }
+
+  private static func addingChatGPTNoProxy(
+    to environment: [String: String]
+  ) -> [String: String] {
+    var updated = environment
+    for key in ["NO_PROXY", "no_proxy"] {
+      var entries = (updated[key] ?? "")
+        .split(separator: ",")
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+      if entries.contains("*") {
+        continue
+      }
+      for host in chatGPTHosts where !entries.contains(host) {
+        entries.append(host)
+      }
+      updated[key] = entries.joined(separator: ",")
+    }
+    return updated
+  }
+
+  private static func addingNoProxyWildcard(
+    to environment: [String: String]
+  ) -> [String: String] {
+    var updated = environment
+    updated["NO_PROXY"] = "*"
+    updated["no_proxy"] = "*"
+    return updated
   }
 }
 
@@ -94,6 +223,8 @@ private struct RPCResponseHeader: Decodable {
 
 private struct CodexAppServerProbe: Sendable {
   let executableURL: URL
+  let arguments: [String]
+  let environment: [String: String]
 
   func run(timeout: TimeInterval) throws -> [Int: Data] {
     let process = Process()
@@ -101,7 +232,8 @@ private struct CodexAppServerProbe: Sendable {
     let standardOutput = Pipe()
 
     process.executableURL = executableURL
-    process.arguments = ["app-server", "--stdio"]
+    process.arguments = arguments
+    process.environment = environment
     process.standardInput = standardInput
     process.standardOutput = standardOutput
     process.standardError = FileHandle.nullDevice
@@ -121,19 +253,10 @@ private struct CodexAppServerProbe: Sendable {
       stop(process)
     }
 
-    let payload = """
-      {"method":"initialize","id":0,"params":{"clientInfo":{"name":"codex-usage-bar","title":"Codex Usage Bar","version":"0.1.0"}}}
-      {"method":"initialized","params":{}}
-      {"method":"account/read","id":1,"params":{"refreshToken":false}}
-      {"method":"account/rateLimits/read","id":2}
-
-      """
-
-    do {
-      try inputHandle.write(contentsOf: Data(payload.utf8))
-    } catch {
-      throw CodexAppServerClientError.launchFailed(error.localizedDescription)
-    }
+    write(
+      "{\"method\":\"initialize\",\"id\":0,\"params\":{\"clientInfo\":{\"name\":\"codex-usage-bar\",\"title\":\"Codex Usage Bar\",\"version\":\"0.1.0\"}}}\n",
+      to: inputHandle
+    )
 
     let deadline = Date().addingTimeInterval(timeout)
     var buffer = Data()
@@ -150,6 +273,8 @@ private struct CodexAppServerProbe: Sendable {
       events: Int16(POLLIN | POLLHUP | POLLERR),
       revents: 0
     )
+    var didSendInitialized = false
+    var didSendRateLimitsRequest = false
 
     while Date() < deadline {
       let remainingMilliseconds = max(
@@ -176,14 +301,32 @@ private struct CodexAppServerProbe: Sendable {
         if byteCount > 0 {
           buffer.append(contentsOf: bytes.prefix(byteCount))
           try consumeLines(from: &buffer, into: &responses)
-          if responses[1] != nil, responses[2] != nil {
-            return responses
-          }
         } else if byteCount < 0, errno != EAGAIN, errno != EWOULDBLOCK,
           errno != EINTR
         {
           throw CodexAppServerClientError.invalidProtocol
         }
+      }
+
+      if responses[0] != nil, !didSendInitialized {
+        write(
+          "{\"method\":\"initialized\",\"params\":{}}\n"
+            + "{\"method\":\"account/read\",\"id\":1,\"params\":{\"refreshToken\":false}}\n",
+          to: inputHandle
+        )
+        didSendInitialized = true
+      }
+
+      if responses[1] != nil, !didSendRateLimitsRequest {
+        write(
+          "{\"method\":\"account/rateLimits/read\",\"id\":2}\n",
+          to: inputHandle
+        )
+        didSendRateLimitsRequest = true
+      }
+
+      if responses[1] != nil, responses[2] != nil {
+        return responses
       }
 
       if !process.isRunning {
@@ -195,6 +338,18 @@ private struct CodexAppServerProbe: Sendable {
     }
 
     throw CodexAppServerClientError.timeout
+  }
+
+  private func write(
+    _ payload: String,
+    to handle: FileHandle
+  ) {
+    do {
+      try handle.write(contentsOf: Data(payload.utf8))
+    } catch {
+      // The read loop will surface the process termination or timeout with a
+      // more useful app-server error if the child exits while writing.
+    }
   }
 
   private func consumeLines(
@@ -219,7 +374,7 @@ private struct CodexAppServerProbe: Sendable {
       if header.id == 0, let error = header.error {
         throw error
       }
-      if let id = header.id, id == 1 || id == 2 {
+      if let id = header.id, id == 0 || id == 1 || id == 2 {
         responses[id] = line
       }
     }

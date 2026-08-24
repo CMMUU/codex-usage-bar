@@ -8,6 +8,7 @@ struct CodexUsageVerifier {
   static func main() async {
     do {
       try runUnitChecks()
+      try await verifyAppServerCompatibility()
       try await verifyLocalSnapshotBridge()
       if CommandLine.arguments.contains("--integration") {
         try await runIntegrationCheck()
@@ -281,6 +282,55 @@ struct CodexUsageVerifier {
     )
   }
 
+  private static func verifyAppServerCompatibility() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(
+      at: temporaryDirectory,
+      withIntermediateDirectories: true
+    )
+    defer {
+      try? FileManager.default.removeItem(at: temporaryDirectory)
+    }
+
+    let executable = temporaryDirectory.appendingPathComponent("codex")
+    let script = """
+      #!/bin/sh
+      if [ "$2" = "--stdio" ]; then
+        exit 64
+      fi
+      while IFS= read -r line; do
+        case "$line" in
+          *initialize*)
+            printf '%s\\n' '{"id":0,"result":{}}'
+            ;;
+          *account/read*)
+            printf '%s\\n' '{"id":1,"result":{"account":{"type":"chatgpt","planType":"pro"},"requiresOpenaiAuth":true}}'
+            ;;
+          *account/rateLimits/read*)
+            printf '%s\\n' '{"id":2,"result":{"rate_limits":{"limit_id":"codex","primary":{"used_percent":"12.5","window_duration_seconds":604800,"resets_at":1788138263}}}}'
+            ;;
+        esac
+      done
+      """
+    try Data(script.utf8).write(to: executable)
+    try FileManager.default.setAttributes(
+      [.posixPermissions: 0o755],
+      ofItemAtPath: executable.path
+    )
+
+    let snapshot = try await CodexAppServerClient(
+      executableURL: executable,
+      timeout: 2
+    ).fetchUsage()
+    try expect(
+      snapshot.usedPercent == 12.5
+        && snapshot.windowDurationMinutes == 10_080
+        && snapshot.planType == "pro",
+      "兼容 CLI 参数回退、顺序握手、snake_case 和秒级窗口字段"
+    )
+  }
+
   private static func runKimiIntegrationCheck() async throws {
     let snapshot = try await KimiUsageClient().fetchUsage()
     try expect((0...100).contains(snapshot.usedPercent), "K3 实时使用率范围")
@@ -409,6 +459,10 @@ struct CodexUsageVerifier {
     try expect(
       legacySnapshot.fiveHourUsedPercent == nil,
       "兼容不含五小时字段的旧 Widget 快照"
+    )
+    try expect(
+      legacySnapshot.windowDurationMinutes == nil,
+      "兼容不含窗口时长字段的旧 Widget 快照"
     )
   }
 
@@ -567,7 +621,9 @@ struct CodexUsageVerifier {
   }
 
   private static func decodeRateLimits(_ json: String) throws -> RateLimitsReadResult {
-    try JSONDecoder().decode(
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    return try decoder.decode(
       RateLimitsReadResult.self,
       from: Data(json.utf8)
     )

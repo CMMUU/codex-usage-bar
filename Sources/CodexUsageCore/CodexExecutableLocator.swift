@@ -20,12 +20,25 @@ public enum CodexExecutableLocator {
       candidates.append(override)
     }
 
+    let chatGPTBundleRoots = [
+      "/Applications/ChatGPT.app",
+      "/System/Applications/ChatGPT.app",
+      "\(homeDirectory)/Applications/ChatGPT.app",
+    ]
+    for bundleRoot in chatGPTBundleRoots {
+      candidates.append(contentsOf: [
+        "\(bundleRoot)/Contents/Resources/codex",
+        "\(bundleRoot)/Contents/SharedSupport/codex",
+      ])
+    }
+
     candidates.append(contentsOf: [
-      "/Applications/ChatGPT.app/Contents/Resources/codex",
       "/opt/homebrew/bin/codex",
       "/usr/local/bin/codex",
       "\(homeDirectory)/.local/bin/codex",
       "\(homeDirectory)/.npm-global/bin/codex",
+      "\(homeDirectory)/.npm/bin/codex",
+      "\(homeDirectory)/bin/codex",
     ])
 
     if let path = environment["PATH"] {

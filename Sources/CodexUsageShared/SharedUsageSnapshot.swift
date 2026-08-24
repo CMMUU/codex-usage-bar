@@ -6,6 +6,7 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
   public let planType: String?
   public let limitName: String?
   public let updatedAt: Date
+  public let windowDurationMinutes: Int?
   public let languageCode: String?
   public let subscriptionID: String?
   public let fiveHourUsedPercent: Double?
@@ -17,6 +18,7 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
     planType: String?,
     limitName: String?,
     updatedAt: Date,
+    windowDurationMinutes: Int? = nil,
     languageCode: String? = nil,
     subscriptionID: String? = nil,
     fiveHourUsedPercent: Double? = nil,
@@ -27,6 +29,7 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
     self.planType = planType
     self.limitName = limitName
     self.updatedAt = updatedAt
+    self.windowDurationMinutes = windowDurationMinutes
     self.languageCode = languageCode
     self.subscriptionID = subscriptionID
     self.fiveHourUsedPercent = fiveHourUsedPercent.map {

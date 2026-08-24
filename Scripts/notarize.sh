@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${VERSION:-0.2.2}"
+VERSION="${VERSION:-0.3.3}"
 DMG_PATH="$ROOT/dist/Codex-Usage-Bar-v$VERSION-universal.dmg"
 
 : "${APPLE_NOTARY_KEY_BASE64:?APPLE_NOTARY_KEY_BASE64 is required}"
