@@ -216,6 +216,38 @@ struct CodexUsageVerifier {
       "K3 五小时限额重置时间"
     )
 
+    let remainingOnlyPayload = """
+      {
+        "user": { "membership": { "level": "LEVEL_INTERMEDIATE" } },
+        "usage": {
+          "limit": 100,
+          "remaining": 83,
+          "reset_time": "2026-07-31T03:22:24.930601Z"
+        },
+        "limits": [
+          {
+            "window": {
+              "duration": 300,
+              "time_unit": "TIME_UNIT_MINUTE"
+            },
+            "detail": {
+              "limit": 100,
+              "remaining": 80,
+              "reset_time": "2026-07-31T02:22:24.930601Z"
+            }
+          }
+        ]
+      }
+      """
+    let remainingOnly = try KimiUsageMapper.snapshot(
+      from: Data(remainingOnlyPayload.utf8)
+    )
+    try expect(
+      remainingOnly.usedPercent == 17
+        && remainingOnly.fiveHourWindow?.usedPercent == 20,
+      "K3 兼容 remaining-only 和 snake_case 响应"
+    )
+
     let withoutLimits = try KimiUsageMapper.snapshot(
       from: Data(
         "{\"usage\":{\"limit\":\"100\",\"used\":\"17\"}}".utf8

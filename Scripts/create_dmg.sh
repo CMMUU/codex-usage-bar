@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Codex Usage Bar"
-VERSION="${VERSION:-0.3.3}"
+VERSION="${VERSION:-0.3.4}"
 CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"
 APP_DIR="$ROOT/dist/$APP_NAME.app"
 DMG_PATH="$ROOT/dist/Codex-Usage-Bar-v$VERSION-universal.dmg"

@@ -69,18 +69,19 @@ public enum KimiUsageMapper {
   private static let fiveHourWindowRange = (4 * 60 + 30)...(5 * 60 + 30)
 
   public static func snapshot(from data: Data) throws -> UsageSnapshot {
-    guard let payload = try? JSONDecoder().decode(KimiUsagesPayload.self, from: data) else {
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    guard let payload = try? decoder.decode(KimiUsagesPayload.self, from: data) else {
       throw KimiUsageClientError.invalidResponse
     }
     guard let usage = payload.usage,
-      let limit = usage.limit.flatMap(Double.init), limit > 0,
-      let used = usage.used.flatMap(Double.init)
+      let values = quotaValues(usage)
     else {
       throw KimiUsageClientError.invalidResponse
     }
 
     return UsageSnapshot(
-      usedPercent: min(100, max(0, used / limit * 100)),
+      usedPercent: values.used / values.limit * 100,
       // The top-level quota does not declare its window length.
       windowDurationMinutes: 0,
       resetsAt: parseResetTime(usage.resetTime),
@@ -95,20 +96,34 @@ public enum KimiUsageMapper {
     from limits: [KimiUsagesPayload.LimitEntry]?
   ) -> UsageSubWindow? {
     guard let entry = limits?.first(where: {
-      $0.window?.timeUnit == "TIME_UNIT_MINUTE"
-        && $0.window?.duration.map(fiveHourWindowRange.contains) == true
+      isFiveHourWindow($0.window)
     }), let detail = entry.detail,
-      let limit = detail.limit.flatMap(Double.init), limit > 0,
-      let used = detail.used.flatMap(Double.init)
+      let values = quotaValues(detail)
     else {
       return nil
     }
 
     return UsageSubWindow(
-      usedPercent: min(100, max(0, used / limit * 100)),
+      usedPercent: values.used / values.limit * 100,
       windowDurationMinutes: entry.window?.duration ?? fiveHourWindowMinutes,
       resetsAt: parseResetTime(detail.resetTime)
     )
+  }
+
+  private static func isFiveHourWindow(
+    _ window: KimiUsagesPayload.LimitEntry.Window?
+  ) -> Bool {
+    guard let window,
+      let duration = window.duration,
+      fiveHourWindowRange.contains(duration)
+    else {
+      return false
+    }
+
+    guard let timeUnit = window.timeUnit?.uppercased() else {
+      return true
+    }
+    return timeUnit == "TIME_UNIT_MINUTE" || timeUnit == "MINUTE"
   }
 
   private static func parseResetTime(_ rawValue: String?) -> Date? {
@@ -121,7 +136,13 @@ public enum KimiUsageMapper {
       return date
     }
     formatter.formatOptions = [.withInternetDateTime]
-    return formatter.date(from: rawValue)
+    if let date = formatter.date(from: rawValue) {
+      return date
+    }
+    if let epoch = TimeInterval(rawValue) {
+      return Date(timeIntervalSince1970: epoch)
+    }
+    return nil
   }
 
   private static func planName(from level: String?) -> String? {
@@ -132,6 +153,25 @@ public enum KimiUsageMapper {
       return String(level.dropFirst("LEVEL_".count)).lowercased()
     }
     return level.lowercased()
+  }
+
+  private static func quotaValues(
+    _ quota: KimiUsagesPayload.Quota
+  ) -> (limit: Double, used: Double)? {
+    guard let limit = quota.limit.flatMap(Double.init), limit > 0 else {
+      return nil
+    }
+
+    let used = quota.used.flatMap(Double.init)
+      ?? quota.remaining.flatMap(Double.init).map { limit - $0 }
+    guard let used else {
+      return nil
+    }
+
+    return (
+      limit: limit,
+      used: min(limit, max(0, used))
+    )
   }
 }
 
@@ -148,12 +188,41 @@ private struct KimiUsagesPayload: Decodable {
     let used: String?
     let remaining: String?
     let resetTime: String?
+
+    private enum CodingKeys: String, CodingKey {
+      case limit
+      case used
+      case remaining
+      case resetTime
+    }
+
+    init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      limit = try container.decodeStringOrNumber(forKey: .limit)
+      used = try container.decodeStringOrNumber(forKey: .used)
+      remaining = try container.decodeStringOrNumber(forKey: .remaining)
+      resetTime = try container.decodeStringOrNumber(forKey: .resetTime)
+    }
   }
 
   struct LimitEntry: Decodable {
     struct Window: Decodable {
       let duration: Int?
       let timeUnit: String?
+
+      private enum CodingKeys: String, CodingKey {
+        case duration
+        case timeUnit
+      }
+
+      init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        duration = try container.decodeIntOrString(forKey: .duration)
+        timeUnit = try container.decodeIfPresent(
+          String.self,
+          forKey: .timeUnit
+        )
+      }
     }
     let window: Window?
     let detail: Quota?
@@ -162,6 +231,33 @@ private struct KimiUsagesPayload: Decodable {
   let user: User?
   let usage: Quota?
   let limits: [LimitEntry]?
+}
+
+private extension KeyedDecodingContainer {
+  func decodeIntOrString(forKey key: Key) throws -> Int? {
+    do {
+      return try decodeIfPresent(Int.self, forKey: key)
+    } catch {
+      guard let value = try decodeIfPresent(String.self, forKey: key) else {
+        return nil
+      }
+      return Int(value)
+    }
+  }
+
+  func decodeStringOrNumber(forKey key: Key) throws -> String? {
+    do {
+      return try decodeIfPresent(String.self, forKey: key)
+    } catch {
+      if let value = try decodeIfPresent(Double.self, forKey: key) {
+        return String(value)
+      }
+      if let value = try decodeIfPresent(Int.self, forKey: key) {
+        return String(value)
+      }
+      return nil
+    }
+  }
 }
 
 public actor KimiUsageClient {

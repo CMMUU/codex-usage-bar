@@ -23,7 +23,7 @@ struct CodexUsageBarApp: App {
       wrappedValue: UpdateManager(
         startingUpdater: !isDocumentationSnapshot,
         previewStatus: isDocumentationSnapshot
-          ? .available(version: "0.3.3")
+          ? .available(version: "0.3.4")
           : nil
       )
     )
