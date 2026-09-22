@@ -70,7 +70,7 @@ private struct UsageTimelineProvider: TimelineProvider {
       )
       let routineRefresh = now.addingTimeInterval(15 * 60)
       let refreshDate =
-        snapshot?.resetsAt.map {
+        snapshot?.displayQuotas.compactMap(\.resetsAt).min().map {
           min(routineRefresh, max(now.addingTimeInterval(60), $0))
         } ?? routineRefresh
 
@@ -87,7 +87,11 @@ private struct UsageTimelineProvider: TimelineProvider {
     let sharedLanguageCode = sharedPreferences?.languageCode
     let sharedSubscriptionID = sharedPreferences?.subscriptionID
 
-    if let snapshot = appGroupStore.load() {
+    if let snapshot = appGroupStore.load(),
+      sharedSubscriptionID == nil
+        || UsageSubscription.resolve(snapshot.subscriptionID)
+          == UsageSubscription.resolve(sharedSubscriptionID)
+    {
       completion(
         snapshot,
         sharedLanguageCode ?? snapshot.languageCode,
@@ -97,7 +101,13 @@ private struct UsageTimelineProvider: TimelineProvider {
     }
 
     localClient.loadPayload { payload in
-      let snapshot = payload?.snapshot ?? widgetCacheStore.load()
+      let candidate = payload?.snapshot ?? widgetCacheStore.load()
+      let snapshot = candidate.flatMap { value in
+        sharedSubscriptionID == nil
+          || UsageSubscription.resolve(value.subscriptionID)
+            == UsageSubscription.resolve(sharedSubscriptionID)
+          ? value : nil
+      }
       let languageCode =
         payload?.languageCode
         ?? sharedLanguageCode
@@ -181,9 +191,13 @@ private struct UsageWidgetView: View {
         usageRing(snapshot)
 
         VStack(alignment: .leading, spacing: 4) {
+          Text(snapshot.primaryQuota.kind.shortTitle(in: language))
+            .font(.caption.weight(.medium))
           Text(language.text(.remainingQuota))
-            .font(.caption)
+            .font(.caption2)
             .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
           Text(percentText(snapshot.remainingPercent))
             .font(.title3.weight(.semibold))
             .monospacedDigit()
@@ -208,30 +222,30 @@ private struct UsageWidgetView: View {
 
       Divider()
 
-      VStack(alignment: .leading, spacing: 7) {
-        compactRow(
-          language.text(
-            subscription.usesWeeklyWindow ? .weeklyUsed : .windowUsed
-          ),
-          percentText(snapshot.usedPercent)
-        )
-        compactRow(
-          language.text(.remainingQuota),
-          percentText(snapshot.remainingPercent)
-        )
-        if let fiveHourUsed = snapshot.fiveHourUsedPercent {
-          compactRow(
-            language.text(.fiveHourLimit),
-            percentText(fiveHourUsed)
-          )
+      VStack(alignment: .leading, spacing: 6) {
+        if subscription == .kimi {
+          ForEach(snapshot.displayQuotas) { window in
+            VStack(alignment: .leading, spacing: 1) {
+              compactRow(
+                window.kind.title(in: language, for: subscription),
+                percentText(window.usedPercent)
+              )
+              Text(language.widgetResetText(window.resetsAt))
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            }
+          }
+        } else {
+          compactRow(language.text(.weeklyUsed), percentText(snapshot.usedPercent))
+          compactRow(language.text(.remainingQuota), percentText(snapshot.remainingPercent))
+          if let fiveHourUsed = snapshot.fiveHourUsedPercent {
+            compactRow(language.text(.fiveHourLimit), percentText(fiveHourUsed))
+          }
+          compactRow(language.text(.resetTime), language.resetDisplayText(snapshot.resetsAt))
         }
-        compactRow(
-          language.text(.resetTime),
-          language.resetDisplayText(snapshot.resetsAt)
-        )
-
         Spacer(minLength: 0)
-
         Text(updatedText(snapshot))
           .font(.caption2)
           .foregroundStyle(.secondary)
@@ -243,7 +257,7 @@ private struct UsageWidgetView: View {
 
   private var emptyContent: some View {
     VStack(alignment: .leading, spacing: 10) {
-      Label(subscription.displayName.uppercased(), systemImage: "chart.bar.fill")
+      Label(subscription.displayName, systemImage: "chart.bar.fill")
         .font(.headline)
 
       Spacer()
@@ -262,7 +276,7 @@ private struct UsageWidgetView: View {
     _ snapshot: SharedUsageSnapshot
   ) -> some View {
     HStack(spacing: 6) {
-      Text(subscription.displayName.uppercased())
+      Text(subscription.displayName)
         .font(.headline)
       Spacer(minLength: 4)
       if snapshot.isStale() {
@@ -301,7 +315,7 @@ private struct UsageWidgetView: View {
       }
     }
     .frame(width: 82, height: 82)
-    .accessibilityLabel(language.text(.weeklyUsed))
+    .accessibilityLabel(snapshot.primaryQuota.kind.title(in: language, for: subscription))
     .accessibilityValue(percentText(snapshot.usedPercent))
   }
 

@@ -1,3 +1,4 @@
+import CodexUsageShared
 import Foundation
 
 public struct KimiCredentials: Codable, Equatable, Sendable {
@@ -53,13 +54,13 @@ public enum KimiUsageClientError: LocalizedError, Equatable {
     case .credentialsMissing:
       return "未找到 kimi-code 登录凭证，请先运行 kimi CLI 完成登录"
     case .unauthorized:
-      return "K3 登录状态已失效，请重新运行 kimi CLI 登录"
+      return "Kimi 登录状态已失效，请重新运行 kimi CLI 登录"
     case .refreshFailed(let detail):
-      return "K3 凭证刷新失败：\(detail)"
+      return "Kimi 凭证刷新失败：\(detail)"
     case .requestFailed(let status):
-      return "K3 额度接口请求失败，状态码：\(status)"
+      return "Kimi 额度接口请求失败，状态码：\(status)"
     case .invalidResponse:
-      return "K3 额度数据无法解析"
+      return "Kimi 额度数据无法解析"
     }
   }
 }
@@ -74,6 +75,29 @@ public enum KimiUsageMapper {
     guard let payload = try? decoder.decode(KimiUsagesPayload.self, from: data) else {
       throw KimiUsageClientError.invalidResponse
     }
+    let modernWindows: [UsageQuotaWindow] = [
+      ratioWindow(payload.usages?.monthTotal, kind: .monthly),
+      ratioWindow(payload.usages?.weekly, kind: .weekly),
+      ratioWindow(payload.usages?.fiveHour, kind: .fiveHour),
+    ].compactMap { $0 }
+
+    if let primary = modernWindows.first {
+      let fiveHour = modernWindows.first { $0.kind == .fiveHour }
+      return UsageSnapshot(
+        usedPercent: primary.usedPercent,
+        windowDurationMinutes: primary.kind.durationMinutes,
+        resetsAt: primary.resetsAt,
+        planType: planName(from: payload.user?.membership?.level),
+        limitName: "Kimi",
+        reachedLimitType: nil,
+        fiveHourWindow: fiveHour.map {
+          UsageSubWindow(
+            usedPercent: $0.usedPercent, windowDurationMinutes: 300, resetsAt: $0.resetsAt)
+        },
+        quotaWindows: modernWindows
+      )
+    }
+
     guard let usage = payload.usage,
       let values = quotaValues(usage)
     else {
@@ -86,18 +110,31 @@ public enum KimiUsageMapper {
       windowDurationMinutes: 0,
       resetsAt: parseResetTime(usage.resetTime),
       planType: planName(from: payload.user?.membership?.level),
-      limitName: "K3",
+      limitName: "Kimi",
       reachedLimitType: nil,
       fiveHourWindow: fiveHourWindow(from: payload.limits)
+    )
+  }
+
+  private static func ratioWindow(
+    _ quota: KimiUsagesPayload.RatioQuota?, kind: UsageQuotaKind
+  ) -> UsageQuotaWindow? {
+    guard let quota, let ratio = quota.usedRatio.flatMap(Double.init),
+      ratio.isFinite, ratio >= 0
+    else { return nil }
+    return UsageQuotaWindow(
+      kind: kind, usedPercent: min(1, ratio) * 100,
+      resetsAt: parseResetTime(quota.resetTime)
     )
   }
 
   private static func fiveHourWindow(
     from limits: [KimiUsagesPayload.LimitEntry]?
   ) -> UsageSubWindow? {
-    guard let entry = limits?.first(where: {
-      isFiveHourWindow($0.window)
-    }), let detail = entry.detail,
+    guard
+      let entry = limits?.first(where: {
+        isFiveHourWindow($0.window)
+      }), let detail = entry.detail,
       let values = quotaValues(detail)
     else {
       return nil
@@ -139,7 +176,7 @@ public enum KimiUsageMapper {
     if let date = formatter.date(from: rawValue) {
       return date
     }
-    if let epoch = TimeInterval(rawValue) {
+    if let epoch = TimeInterval(rawValue), epoch.isFinite {
       return Date(timeIntervalSince1970: epoch)
     }
     return nil
@@ -158,13 +195,14 @@ public enum KimiUsageMapper {
   private static func quotaValues(
     _ quota: KimiUsagesPayload.Quota
   ) -> (limit: Double, used: Double)? {
-    guard let limit = quota.limit.flatMap(Double.init), limit > 0 else {
+    guard let limit = quota.limit.flatMap(Double.init), limit.isFinite, limit > 0 else {
       return nil
     }
 
-    let used = quota.used.flatMap(Double.init)
+    let used =
+      quota.used.flatMap(Double.init)
       ?? quota.remaining.flatMap(Double.init).map { limit - $0 }
-    guard let used else {
+    guard let used, used.isFinite else {
       return nil
     }
 
@@ -176,6 +214,46 @@ public enum KimiUsageMapper {
 }
 
 private struct KimiUsagesPayload: Decodable {
+  struct RatioQuota: Decodable {
+    let usedRatio: String?
+    let resetTime: String?
+
+    private enum CodingKeys: String, CodingKey { case usedRatio, resetTime }
+
+    init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      usedRatio = try container.decodeStringOrNumber(forKey: .usedRatio)
+      resetTime = try? container.decodeStringOrNumber(forKey: .resetTime)
+    }
+  }
+
+  struct Usages: Decodable {
+    let monthTotal: RatioQuota?
+    let weekly: RatioQuota?
+    let fiveHour: RatioQuota?
+
+    // JSONDecoder converts snake_case before matching CodingKeys.
+    private enum CodingKeys: String, CodingKey {
+      case monthTotal = "limitMonthTotal"
+      case weekly = "limit7D"
+      case fiveHour = "limit5H"
+      case weeklyCamel = "limit7d"
+      case fiveHourCamel = "limit5h"
+    }
+
+    init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      monthTotal = try? container.decodeIfPresent(RatioQuota.self, forKey: .monthTotal)
+      weekly =
+        (try? container.decodeIfPresent(RatioQuota.self, forKey: .weekly))
+        ?? (try? container.decodeIfPresent(RatioQuota.self, forKey: .weeklyCamel))
+      fiveHour =
+        (try? container.decodeIfPresent(RatioQuota.self, forKey: .fiveHour))
+        ?? (try? container.decodeIfPresent(RatioQuota.self, forKey: .fiveHourCamel))
+      // limit_month_code is part of monthTotal, never an additional quota.
+    }
+  }
+
   struct User: Decodable {
     struct Membership: Decodable {
       let level: String?
@@ -231,10 +309,21 @@ private struct KimiUsagesPayload: Decodable {
   let user: User?
   let usage: Quota?
   let limits: [LimitEntry]?
+  let usages: Usages?
+
+  private enum CodingKeys: String, CodingKey { case user, usage, limits, usages }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    user = try? container.decodeIfPresent(User.self, forKey: .user)
+    usage = try? container.decodeIfPresent(Quota.self, forKey: .usage)
+    limits = try? container.decodeIfPresent([LimitEntry].self, forKey: .limits)
+    usages = try? container.decodeIfPresent(Usages.self, forKey: .usages)
+  }
 }
 
-private extension KeyedDecodingContainer {
-  func decodeIntOrString(forKey key: Key) throws -> Int? {
+extension KeyedDecodingContainer {
+  fileprivate func decodeIntOrString(forKey key: Key) throws -> Int? {
     do {
       return try decodeIfPresent(Int.self, forKey: key)
     } catch {
@@ -245,7 +334,7 @@ private extension KeyedDecodingContainer {
     }
   }
 
-  func decodeStringOrNumber(forKey key: Key) throws -> String? {
+  fileprivate func decodeStringOrNumber(forKey key: Key) throws -> String? {
     do {
       return try decodeIfPresent(String.self, forKey: key)
     } catch {
@@ -351,10 +440,12 @@ public actor KimiUsageClient {
       let scope: String?
       let token_type: String?
     }
-    guard let parsed = try? JSONDecoder().decode(
-      RefreshResponse.self,
-      from: data
-    ) else {
+    guard
+      let parsed = try? JSONDecoder().decode(
+        RefreshResponse.self,
+        from: data
+      )
+    else {
       throw KimiUsageClientError.refreshFailed("invalid response")
     }
 

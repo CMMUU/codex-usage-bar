@@ -1,3 +1,4 @@
+import CodexUsageShared
 import Foundation
 
 struct RPCEnvelope<Result: Decodable & Sendable>: Decodable, Sendable {
@@ -71,8 +72,8 @@ struct CodexRateLimitWindow: Decodable, Sendable {
   }
 }
 
-private extension KeyedDecodingContainer {
-  func decodeFlexibleDouble(forKey key: Key) throws -> Double? {
+extension KeyedDecodingContainer {
+  fileprivate func decodeFlexibleDouble(forKey key: Key) throws -> Double? {
     do {
       return try decodeIfPresent(Double.self, forKey: key)
     } catch {
@@ -81,7 +82,7 @@ private extension KeyedDecodingContainer {
     }
   }
 
-  func decodeFlexibleInt(forKey key: Key) throws -> Int? {
+  fileprivate func decodeFlexibleInt(forKey key: Key) throws -> Int? {
     do {
       return try decodeIfPresent(Int.self, forKey: key)
     } catch {
@@ -100,7 +101,7 @@ private extension KeyedDecodingContainer {
     }
   }
 
-  func decodeFlexibleInt64(forKey key: Key) throws -> Int64? {
+  fileprivate func decodeFlexibleInt64(forKey key: Key) throws -> Int64? {
     do {
       return try decodeIfPresent(Int64.self, forKey: key)
     } catch {
@@ -152,6 +153,7 @@ public struct UsageSnapshot: Sendable, Equatable {
   public let limitName: String?
   public let reachedLimitType: String?
   public let fiveHourWindow: UsageSubWindow?
+  public let quotaWindows: [UsageQuotaWindow]?
 
   public init(
     usedPercent: Double,
@@ -160,7 +162,8 @@ public struct UsageSnapshot: Sendable, Equatable {
     planType: String?,
     limitName: String?,
     reachedLimitType: String?,
-    fiveHourWindow: UsageSubWindow? = nil
+    fiveHourWindow: UsageSubWindow? = nil,
+    quotaWindows: [UsageQuotaWindow]? = nil
   ) {
     self.usedPercent = usedPercent
     self.windowDurationMinutes = windowDurationMinutes
@@ -169,6 +172,42 @@ public struct UsageSnapshot: Sendable, Equatable {
     self.limitName = limitName
     self.reachedLimitType = reachedLimitType
     self.fiveHourWindow = fiveHourWindow
+    self.quotaWindows = quotaWindows
+  }
+
+  public init(shared: SharedUsageSnapshot) {
+    let subscription = UsageSubscription.resolve(shared.subscriptionID)
+    self.init(
+      usedPercent: shared.usedPercent,
+      windowDurationMinutes: shared.windowDurationMinutes ?? (subscription == .codex ? 10_080 : 0),
+      resetsAt: shared.resetsAt,
+      planType: shared.planType,
+      limitName: subscription == .kimi ? "Kimi" : shared.limitName,
+      reachedLimitType: nil,
+      fiveHourWindow: shared.fiveHourUsedPercent.map {
+        UsageSubWindow(
+          usedPercent: $0, windowDurationMinutes: 300, resetsAt: shared.fiveHourResetsAt)
+      },
+      quotaWindows: shared.quotaWindows
+    )
+  }
+
+  public func shared(
+    subscription: UsageSubscription, language: AppLanguage, updatedAt: Date
+  ) -> SharedUsageSnapshot {
+    SharedUsageSnapshot(
+      usedPercent: usedPercent,
+      resetsAt: resetsAt,
+      planType: planType,
+      limitName: subscription == .kimi ? "Kimi" : limitName,
+      updatedAt: updatedAt,
+      windowDurationMinutes: windowDurationMinutes,
+      languageCode: language.rawValue,
+      subscriptionID: subscription.rawValue,
+      fiveHourUsedPercent: fiveHourWindow?.usedPercent,
+      fiveHourResetsAt: fiveHourWindow?.resetsAt,
+      quotaWindows: quotaWindows
+    )
   }
 
   public var remainingPercent: Double {

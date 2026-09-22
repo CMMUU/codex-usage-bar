@@ -20,6 +20,7 @@ let package = Package(
   targets: [
     .target(
       name: "CodexUsageCore",
+      dependencies: ["CodexUsageShared"],
       path: "Sources/CodexUsageCore"
     ),
     .target(

@@ -40,10 +40,18 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
       return "周限额使用情况"
     case (.english, .subtitle):
       return "Weekly limit usage"
-    case (.simplifiedChinese, .k3Subtitle):
+    case (.simplifiedChinese, .kimiSubtitle):
       return "限额使用情况"
-    case (.english, .k3Subtitle):
+    case (.english, .kimiSubtitle):
       return "Limit usage"
+    case (.simplifiedChinese, .monthlyQuota):
+      return "会员月额度"
+    case (.english, .monthlyQuota):
+      return "Monthly quota"
+    case (.simplifiedChinese, .weeklyLimit):
+      return "周限额"
+    case (.english, .weeklyLimit):
+      return "Weekly limit"
     case (.simplifiedChinese, .fiveHourLimit):
       return "5 小时限额"
     case (.english, .fiveHourLimit):
@@ -140,10 +148,10 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
       return "Codex 周限额"
     case (.english, .menuBarAccessibility):
       return "Codex weekly limit"
-    case (.simplifiedChinese, .k3MenuBarAccessibility):
-      return "K3 限额"
-    case (.english, .k3MenuBarAccessibility):
-      return "K3 limit"
+    case (.simplifiedChinese, .kimiMenuBarAccessibility):
+      return "Kimi 限额"
+    case (.english, .kimiMenuBarAccessibility):
+      return "Kimi limit"
     case (.simplifiedChinese, .launchAtLoginUpdateFailed):
       return "更新登录启动设置失败"
     case (.english, .launchAtLoginUpdateFailed):
@@ -189,10 +197,10 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
         "Codex CLI was not found. Install Codex or set CODEX_BINARY_PATH.",
       "未找到 kimi-code 登录凭证，请先运行 kimi CLI 完成登录":
         "Kimi Code credentials not found. Sign in with the kimi CLI first.",
-      "K3 登录状态已失效，请重新运行 kimi CLI 登录":
-        "K3 sign-in expired. Sign in again with the kimi CLI.",
-      "K3 额度数据无法解析":
-        "K3 usage data could not be parsed",
+      "Kimi 登录状态已失效，请重新运行 kimi CLI 登录":
+        "Kimi sign-in expired. Sign in again with the kimi CLI.",
+      "Kimi 额度数据无法解析":
+        "Kimi usage data could not be parsed",
     ]
     if let translated = exactTranslations[message] {
       return translated
@@ -205,8 +213,8 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
       "Codex app-server 未返回 ": "Codex app-server did not return ",
       "Codex app-server 的 ": "Codex app-server response for ",
       "Codex app-server 错误 ": "Codex app-server error ",
-      "K3 凭证刷新失败：": "Failed to refresh K3 credentials: ",
-      "K3 额度接口请求失败，状态码：": "K3 usage request failed with status: ",
+      "Kimi 凭证刷新失败：": "Failed to refresh Kimi credentials: ",
+      "Kimi 额度接口请求失败，状态码：": "Kimi usage request failed with status: ",
     ]
     for (prefix, translatedPrefix) in prefixTranslations
     where message.hasPrefix(prefix) {
@@ -254,12 +262,14 @@ public enum AppText: Sendable {
   case notRefreshed
   case languagePicker
   case menuBarAccessibility
-  case k3MenuBarAccessibility
+  case kimiMenuBarAccessibility
   case launchAtLoginUpdateFailed
   case subscriptionPicker
-  case k3Subtitle
+  case kimiSubtitle
   case windowUsed
   case fiveHourLimit
+  case monthlyQuota
+  case weeklyLimit
 }
 
 public enum LanguageSwitchResult: Equatable, Sendable {

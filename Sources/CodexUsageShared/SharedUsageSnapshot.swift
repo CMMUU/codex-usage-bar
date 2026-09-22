@@ -11,6 +11,7 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
   public let subscriptionID: String?
   public let fiveHourUsedPercent: Double?
   public let fiveHourResetsAt: Date?
+  public let quotaWindows: [UsageQuotaWindow]?
 
   public init(
     usedPercent: Double,
@@ -22,7 +23,8 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
     languageCode: String? = nil,
     subscriptionID: String? = nil,
     fiveHourUsedPercent: Double? = nil,
-    fiveHourResetsAt: Date? = nil
+    fiveHourResetsAt: Date? = nil,
+    quotaWindows: [UsageQuotaWindow]? = nil
   ) {
     self.usedPercent = min(100, max(0, usedPercent))
     self.resetsAt = resetsAt
@@ -36,7 +38,30 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
       min(100, max(0, $0))
     }
     self.fiveHourResetsAt = fiveHourResetsAt
+    self.quotaWindows = quotaWindows
   }
+
+  /// Old Kimi snapshots do not establish whether their main quota is weekly
+  /// or monthly. Keep that scope unknown until fresh typed data arrives.
+  public var displayQuotas: [UsageQuotaWindow] {
+    if let quotaWindows, !quotaWindows.isEmpty { return quotaWindows }
+    var windows = [
+      UsageQuotaWindow(
+        kind: UsageSubscription.resolve(subscriptionID) == .codex ? .weekly : .unknown,
+        usedPercent: usedPercent,
+        resetsAt: resetsAt
+      )
+    ]
+    if let fiveHourUsedPercent {
+      windows.append(
+        UsageQuotaWindow(
+          kind: .fiveHour, usedPercent: fiveHourUsedPercent, resetsAt: fiveHourResetsAt
+        ))
+    }
+    return windows
+  }
+
+  public var primaryQuota: UsageQuotaWindow { displayQuotas[0] }
 
   public var remainingPercent: Double {
     max(0, 100 - usedPercent)

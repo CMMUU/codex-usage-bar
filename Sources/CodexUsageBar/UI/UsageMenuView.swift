@@ -35,13 +35,11 @@ struct UsageMenuView: View {
   private var header: some View {
     HStack {
       VStack(alignment: .leading, spacing: 3) {
-        Text(viewModel.selectedSubscription.displayName.uppercased())
+        Text(viewModel.selectedSubscription.displayName)
           .font(.system(size: 18, weight: .bold, design: .rounded))
         Text(
-          language.text(
-            viewModel.selectedSubscription.usesWeeklyWindow
-              ? .subtitle : .k3Subtitle
-          )
+          viewModel.selectedSubscription == .codex
+            ? language.text(.subtitle) : language.text(.kimiSubtitle)
         )
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -115,10 +113,7 @@ struct UsageMenuView: View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(alignment: .firstTextBaseline) {
         Text(
-          language.text(
-            viewModel.selectedSubscription.usesWeeklyWindow
-              ? .weeklyUsed : .windowUsed
-          )
+          primaryQuotaTitle
         )
         .font(.headline)
         Spacer()
@@ -131,7 +126,7 @@ struct UsageMenuView: View {
         value: viewModel.snapshot?.usedPercent ?? 0,
         color: progressColor
       )
-      .accessibilityLabel(language.text(.weeklyUsed))
+      .accessibilityLabel(primaryQuotaTitle)
       .accessibilityValue(percentText(viewModel.snapshot?.usedPercent))
 
       HStack {
@@ -144,16 +139,20 @@ struct UsageMenuView: View {
       }
       .font(.subheadline)
 
-      if let fiveHour = viewModel.snapshot?.fiveHourWindow {
-        fiveHourSection(fiveHour)
+      ForEach(Array((viewModel.displaySnapshot?.displayQuotas ?? []).dropFirst())) { window in
+        quotaSection(window)
       }
     }
   }
 
-  private func fiveHourSection(_ window: UsageSubWindow) -> some View {
+  private var primaryQuotaTitle: String {
+    viewModel.primaryQuotaKind.title(in: language, for: viewModel.selectedSubscription)
+  }
+
+  private func quotaSection(_ window: UsageQuotaWindow) -> some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack {
-        Text(language.text(.fiveHourLimit))
+        Text(window.kind.title(in: language, for: viewModel.selectedSubscription))
           .font(.subheadline.weight(.medium))
         Spacer()
         Text(percentText(window.usedPercent))
@@ -165,7 +164,7 @@ struct UsageMenuView: View {
         value: window.usedPercent,
         color: progressColor(for: window.usedPercent)
       )
-      .accessibilityLabel(language.text(.fiveHourLimit))
+      .accessibilityLabel(window.kind.title(in: language, for: viewModel.selectedSubscription))
       .accessibilityValue(percentText(window.usedPercent))
 
       HStack {

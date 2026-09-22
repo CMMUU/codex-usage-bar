@@ -8,6 +8,7 @@ struct CodexUsageVerifier {
   static func main() async {
     do {
       try runUnitChecks()
+      try verifyModernKimiUsage()
       try await verifyAppServerCompatibility()
       try await verifyLocalSnapshotBridge()
       if CommandLine.arguments.contains("--integration") {
@@ -187,33 +188,34 @@ struct CodexUsageVerifier {
       }
       """
     let snapshot = try KimiUsageMapper.snapshot(from: Data(payload.utf8))
-    try expect(snapshot.usedPercent == 17, "K3 解析已用百分比")
-    try expect(snapshot.remainingPercent == 83, "K3 计算剩余额度")
-    try expect(snapshot.planType == "intermediate", "K3 映射套餐等级")
-    try expect(snapshot.limitName == "K3", "K3 设置限额名称")
-    try expect(snapshot.windowDurationMinutes == 0, "K3 主窗口时长未知")
+    try expect(snapshot.usedPercent == 17, "Kimi 解析已用百分比")
+    try expect(snapshot.remainingPercent == 83, "Kimi 计算剩余额度")
+    try expect(snapshot.planType == "intermediate", "Kimi 映射套餐等级")
+    try expect(snapshot.limitName == "Kimi", "Kimi 设置限额名称")
+    try expect(snapshot.windowDurationMinutes == 0, "Kimi 主窗口时长未知")
 
     let resetFormatter = ISO8601DateFormatter()
     resetFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     try expect(
-      snapshot.resetsAt == resetFormatter.date(
-        from: "2026-07-31T03:22:24.930601Z"
-      ),
-      "K3 解析重置时间"
+      snapshot.resetsAt
+        == resetFormatter.date(
+          from: "2026-07-31T03:22:24.930601Z"
+        ),
+      "Kimi 解析重置时间"
     )
 
     try expect(
       snapshot.fiveHourWindow?.usedPercent == 20,
-      "K3 提取五小时限额"
+      "Kimi 提取五小时限额"
     )
     try expect(
       snapshot.fiveHourWindow?.windowDurationMinutes == 300,
-      "K3 五小时窗口长度"
+      "Kimi 五小时窗口长度"
     )
     try expect(
       snapshot.fiveHourWindow?.resetsAt
         == resetFormatter.date(from: "2026-07-31T02:22:24.930601Z"),
-      "K3 五小时限额重置时间"
+      "Kimi 五小时限额重置时间"
     )
 
     let remainingOnlyPayload = """
@@ -245,7 +247,7 @@ struct CodexUsageVerifier {
     try expect(
       remainingOnly.usedPercent == 17
         && remainingOnly.fiveHourWindow?.usedPercent == 20,
-      "K3 兼容 remaining-only 和 snake_case 响应"
+      "Kimi 兼容 remaining-only 和 snake_case 响应"
     )
 
     let withoutLimits = try KimiUsageMapper.snapshot(
@@ -255,7 +257,7 @@ struct CodexUsageVerifier {
     )
     try expect(
       withoutLimits.fiveHourWindow == nil,
-      "K3 无 limits 字段时隐藏五小时限额"
+      "Kimi 无 limits 字段时隐藏五小时限额"
     )
 
     let emptyLimits = try KimiUsageMapper.snapshot(
@@ -265,16 +267,16 @@ struct CodexUsageVerifier {
     )
     try expect(
       emptyLimits.fiveHourWindow == nil,
-      "K3 空 limits 数组时隐藏五小时限额"
+      "Kimi 空 limits 数组时隐藏五小时限额"
     )
 
     do {
       _ = try KimiUsageMapper.snapshot(
         from: Data("{\"usage\":{\"limit\":\"0\",\"used\":\"1\"}}".utf8)
       )
-      throw VerificationFailure("K3 拒绝无效额度数据")
+      throw VerificationFailure("Kimi 拒绝无效额度数据")
     } catch KimiUsageClientError.invalidResponse {
-      print("PASS K3 拒绝无效额度数据")
+      print("PASS Kimi 拒绝无效额度数据")
     }
 
     let credentials = try JSONDecoder().decode(
@@ -288,19 +290,164 @@ struct CodexUsageVerifier {
       credentials.isAccessTokenValid(
         at: Date(timeIntervalSince1970: 1_700_000_000)
       ),
-      "K3 凭证在有效期内"
+      "Kimi 凭证在有效期内"
     )
     try expect(
       !credentials.isAccessTokenValid(
         at: Date(timeIntervalSince1970: 4_103_000_000)
       ),
-      "K3 凭证过期识别"
+      "Kimi 凭证过期识别"
     )
     try expect(
-      UsageSubscription.resolve("k3") == .k3
+      UsageSubscription.resolve("k3") == .kimi
         && UsageSubscription.resolve(nil) == .codex
         && UsageSubscription.resolve("unknown") == .codex,
       "订阅选择解析与兜底"
+    )
+  }
+
+  private static func verifyModernKimiUsage() throws {
+    func mapped(_ object: [String: Any]) throws -> UsageSnapshot {
+      try KimiUsageMapper.snapshot(from: JSONSerialization.data(withJSONObject: object))
+    }
+    let windows: [String: Any] = [
+      "limit_month_total": ["used_ratio": 0.25, "reset_time": "2026-10-01T00:00:00Z"],
+      "limit_month_code": ["used_ratio": 0.1],
+      "limit_7d": ["used_ratio": "0.4", "reset_time": "2026-09-25T00:00:00Z"],
+      "limit_5h": ["used_ratio": 0.8, "reset_time": "2026-09-22T12:00:00Z"],
+    ]
+    let modern = try mapped(["usages": windows])
+    let camelCase = try mapped([
+      "usages": [
+        "limitMonthTotal": ["usedRatio": "0.25"],
+        "limit7d": ["usedRatio": 0.4],
+        "limit5h": ["usedRatio": 0.8],
+      ]
+    ])
+    try expect(
+      camelCase.quotaWindows?.map(\.usedPercent) == [25, 40, 80],
+      "Kimi 新版窗口同时兼容 camelCase 字段"
+    )
+    try expect(modern.usedPercent == 25, "Kimi 月总额度优先，Code 构成不重复累加")
+    try expect(
+      modern.quotaWindows?.map(\.kind) == [.monthly, .weekly, .fiveHour]
+        && modern.quotaWindows?.map(\.usedPercent) == [25, 40, 80],
+      "Kimi 解析新版数字及字符串比例，保留三个独立窗口"
+    )
+    try expect(
+      modern.quotaWindows?.compactMap(\.resetsAt).count == 3
+        && Set(modern.quotaWindows?.compactMap(\.resetsAt) ?? []).count == 3
+        && modern.resetsAt == ISO8601DateFormatter().date(from: "2026-10-01T00:00:00Z"),
+      "Kimi 各窗口保留独立重置时间，主重置跟随月额度"
+    )
+    let newPlan = try mapped([
+      "usages": [
+        "limit_month_total": ["used_ratio": 0],
+        "limit_5h": ["used_ratio": 0.5],
+      ]
+    ])
+    try expect(
+      newPlan.quotaWindows?.map(\.kind) == [.monthly, .fiveHour] && newPlan.usedPercent == 0,
+      "Kimi 新套餐不虚构周窗口，真实零用量仍可显示"
+    )
+    let weeklyOnly = try mapped(["usages": ["limit_7d": ["used_ratio": "0.5"]]])
+    let shortOnly = try mapped(["usages": ["limit_5h": ["used_ratio": 0.5]]])
+    try expect(
+      weeklyOnly.quotaWindows?.first?.kind == .weekly
+        && shortOnly.quotaWindows?.first?.kind == .fiveHour
+        && shortOnly.windowDurationMinutes == 300,
+      "Kimi 缺月额度时回退明确的周或五小时口径"
+    )
+    let mixed = try mapped(["usages": windows, "usage": ["limit": 100, "used": 99]])
+    try expect(mixed.usedPercent == 25, "Kimi 新旧响应并存时优先采用新版窗口")
+    let legacyFallback = try mapped(["usages": [:], "usage": ["limit": 100, "remaining": 60]])
+    try expect(
+      legacyFallback.usedPercent == 40 && legacyFallback.quotaWindows == nil,
+      "Kimi 无新版窗口时保留旧解析，不将未知口径推断为月额度"
+    )
+    let partial = try mapped([
+      "usages": [
+        "limit_month_total": "invalid",
+        "limit_7d": ["used_ratio": -1],
+        "limit_5h": ["used_ratio": 0.5, "reset_time": "invalid"],
+      ]
+    ])
+    try expect(
+      partial.quotaWindows?.map(\.kind) == [.fiveHour] && partial.resetsAt == nil,
+      "Kimi 隔离无效窗口，未知重置时间不影响有效用量"
+    )
+    let saturated = try mapped(["usages": ["limit_month_total": ["used_ratio": 1.2]]])
+    try expect(saturated.usedPercent == 100, "Kimi 超限比例显示上限 100%")
+    let invalidPayloads: [[String: Any]] = [
+      ["usages": [:]],
+      ["usages": ["limit_month_code": ["used_ratio": 0.3]]],
+      ["usages": ["limit_month_total": ["used_ratio": "NaN"]]],
+      ["usages": ["limit_month_total": ["used_ratio": "Infinity"]]],
+      ["usages": ["limit_month_total": ["used_ratio": -0.1]]],
+      ["usages": ["limit_month_total": ["reset_time": "2026-10-01T00:00:00Z"]]],
+      ["usage": ["limit": "Infinity", "used": 2]],
+      ["usage": ["limit": 100, "used": "NaN"]],
+    ]
+    for object in invalidPayloads {
+      do {
+        _ = try mapped(object)
+        throw VerificationFailure("Kimi 无效或缺失用量不能显示为 0%")
+      } catch KimiUsageClientError.invalidResponse {}
+    }
+    print("PASS Kimi 无效或缺失用量不能显示为 0%")
+
+    let oldSubscription = try JSONDecoder().decode(
+      UsageSubscription.self, from: Data("\"k3\"".utf8))
+    let encodedSubscription = try JSONEncoder().encode(oldSubscription)
+    try expect(
+      oldSubscription == .kimi && UsageSubscription.resolve("kimi") == .kimi
+        && String(data: encodedSubscription, encoding: .utf8) == "\"kimi\"",
+      "Kimi 兼容旧订阅解码，统一写入新标识"
+    )
+    let legacy = try JSONDecoder().decode(
+      SharedUsageSnapshot.self,
+      from: Data(
+        """
+        {"usedPercent":35,"updatedAt":1000,"limitName":"K3","subscriptionID":"k3",
+         "fiveHourUsedPercent":60,"fiveHourResetsAt":2000}
+        """.utf8
+      ))
+    let restored = UsageSnapshot(shared: legacy)
+    let migrated = restored.shared(
+      subscription: .kimi, language: .english, updatedAt: legacy.updatedAt)
+    try expect(
+      restored.limitName == "Kimi" && migrated.subscriptionID == "kimi"
+        && migrated.displayQuotas.map(\.kind) == [.unknown, .fiveHour]
+        && migrated.usedPercent == 35 && migrated.fiveHourUsedPercent == 60,
+      "Kimi 旧快照升级保留用量，规范名称但不猜测额度周期"
+    )
+    let shared = modern.shared(subscription: .kimi, language: .english, updatedAt: Date())
+    let roundTrip = try JSONDecoder().decode(
+      SharedUsageSnapshot.self, from: JSONEncoder().encode(shared))
+    try expect(
+      roundTrip == shared && UsageSnapshot(shared: roundTrip).quotaWindows == modern.quotaWindows,
+      "Kimi 主应用与 Widget 序列化往返保留全部窗口与重置时间"
+    )
+    try expect(
+      roundTrip.primaryQuota.kind.title(in: .simplifiedChinese, for: .kimi) == "会员月额度"
+        && shortOnly.shared(subscription: .kimi, language: .english, updatedAt: Date())
+          .primaryQuota.kind.title(in: .english, for: .kimi) == "Code · 5-hour limit",
+      "Kimi 回退窗口的显示及无障碍标签具有明确口径"
+    )
+    try expect(
+      AppLanguage.english.localizedErrorMessage("Kimi 额度数据无法解析")
+        == "Kimi usage data could not be parsed"
+        && AppLanguage.english.localizedErrorMessage("Kimi 额度接口请求失败，状态码：401")
+          == "Kimi usage request failed with status: 401",
+      "Kimi 中英文错误文案同步更名"
+    )
+    let codex = SharedUsageSnapshot(
+      usedPercent: 30, resetsAt: nil, planType: "pro", limitName: "Codex", updatedAt: Date(),
+      fiveHourUsedPercent: 20
+    )
+    try expect(
+      codex.displayQuotas.map(\.kind) == [.weekly, .fiveHour],
+      "Codex 旧快照仍按周额度与五小时限额展示"
     )
   }
 
@@ -365,20 +512,20 @@ struct CodexUsageVerifier {
 
   private static func runKimiIntegrationCheck() async throws {
     let snapshot = try await KimiUsageClient().fetchUsage()
-    try expect((0...100).contains(snapshot.usedPercent), "K3 实时使用率范围")
-    try expect(snapshot.limitName == "K3", "K3 实时限额名称")
+    try expect((0...100).contains(snapshot.usedPercent), "Kimi 实时使用率范围")
+    try expect(snapshot.limitName == "Kimi", "Kimi 实时限额名称")
     print(
-      "PASS 实时 K3 数据：已用 \(Int(snapshot.usedPercent.rounded()))%，"
+      "PASS 实时 Kimi 数据：已用 \(Int(snapshot.usedPercent.rounded()))%，"
         + "剩余 \(Int(snapshot.remainingPercent.rounded()))%，"
         + "套餐 \(snapshot.planType ?? "未知")"
     )
     if let fiveHour = snapshot.fiveHourWindow {
       print(
-        "PASS 实时 K3 五小时限额：已用 "
+        "PASS 实时 Kimi 五小时限额：已用 "
           + "\(Int(fiveHour.usedPercent.rounded()))%"
       )
     } else {
-      print("PASS 实时 K3 无五小时限额（按需隐藏）")
+      print("PASS 实时 Kimi 无五小时限额（按需隐藏）")
     }
   }
 
@@ -455,13 +602,13 @@ struct CodexUsageVerifier {
       "独立持久化 Widget 语言设置"
     )
 
-    let k3Preferences = SharedWidgetPreferences(
+    let kimiPreferences = SharedWidgetPreferences(
       languageCode: AppLanguage.simplifiedChinese.rawValue,
-      subscriptionID: UsageSubscription.k3.rawValue
+      subscriptionID: UsageSubscription.kimi.rawValue
     )
-    try preferencesStore.save(k3Preferences)
+    try preferencesStore.save(kimiPreferences)
     try expect(
-      preferencesStore.load() == k3Preferences,
+      preferencesStore.load() == kimiPreferences,
       "持久化 Widget 订阅选择"
     )
 

@@ -54,6 +54,9 @@ final class UsageViewModel: ObservableObject {
       sharedWidgetPreferencesStore.load()?.subscriptionID
     )
     restoreCachedSnapshot()
+    if sharedWidgetPreferencesStore.load()?.subscriptionID == "k3" {
+      persistWidgetPreferences()
+    }
   }
 
   deinit {
@@ -61,8 +64,22 @@ final class UsageViewModel: ObservableObject {
     localUsageServer.stop()
   }
 
+  var displaySnapshot: SharedUsageSnapshot? {
+    snapshot?.shared(
+      subscription: selectedSubscription, language: displayLanguage,
+      updatedAt: lastUpdated ?? Date()
+    )
+  }
+
+  var primaryQuotaKind: UsageQuotaKind {
+    displaySnapshot?.primaryQuota.kind ?? (selectedSubscription == .codex ? .weekly : .unknown)
+  }
+
   var menuBarText: String {
-    let name = selectedSubscription.displayName
+    var name = selectedSubscription.displayName
+    if selectedSubscription == .kimi, snapshot != nil {
+      name += " " + primaryQuotaKind.shortTitle(in: displayLanguage)
+    }
     if let snapshot {
       return "\(name) \(Int(snapshot.usedPercent.rounded()))%"
     }
@@ -158,20 +175,25 @@ final class UsageViewModel: ObservableObject {
       return
     }
 
+    let requestedSubscription = selectedSubscription
     isRefreshing = true
     defer {
       isRefreshing = false
       applyPendingDisplayLanguageIfNeeded()
+      if requestedSubscription != selectedSubscription {
+        Task { await refresh() }
+      }
     }
 
     do {
       let fetchedSnapshot: UsageSnapshot
-      switch selectedSubscription {
+      switch requestedSubscription {
       case .codex:
         fetchedSnapshot = try await client.fetchUsage()
-      case .k3:
+      case .kimi:
         fetchedSnapshot = try await kimiClient.fetchUsage()
       }
+      guard requestedSubscription == selectedSubscription else { return }
       let updatedAt = Date()
       snapshot = fetchedSnapshot
       lastUpdated = updatedAt
@@ -181,6 +203,7 @@ final class UsageViewModel: ObservableObject {
       }
       publishWidgetSnapshot(fetchedSnapshot, updatedAt: updatedAt)
     } catch {
+      guard requestedSubscription == selectedSubscription else { return }
       errorMessage =
         (error as? LocalizedError)?.errorDescription
         ?? error.localizedDescription
@@ -210,27 +233,7 @@ final class UsageViewModel: ObservableObject {
       return
     }
 
-    let fiveHourWindow: UsageSubWindow?
-    if let usedPercent = cached.fiveHourUsedPercent {
-      fiveHourWindow = UsageSubWindow(
-        usedPercent: usedPercent,
-        windowDurationMinutes: 5 * 60,
-        resetsAt: cached.fiveHourResetsAt
-      )
-    } else {
-      fiveHourWindow = nil
-    }
-
-    snapshot = UsageSnapshot(
-      usedPercent: cached.usedPercent,
-      windowDurationMinutes: cached.windowDurationMinutes
-        ?? (selectedSubscription.usesWeeklyWindow ? 7 * 24 * 60 : 0),
-      resetsAt: cached.resetsAt,
-      planType: cached.planType,
-      limitName: cached.limitName,
-      reachedLimitType: nil,
-      fiveHourWindow: fiveHourWindow
-    )
+    snapshot = UsageSnapshot(shared: cached)
     lastUpdated = cached.updatedAt
   }
 
@@ -272,35 +275,21 @@ final class UsageViewModel: ObservableObject {
           )
         )
       )
-    case .k3:
+    case .kimi:
+      let monthlyReset = Date(timeIntervalSince1970: 1_791_024_000)
+      let weeklyReset = monthlyReset.addingTimeInterval(-7 * 24 * 60 * 60)
+      let shortReset = weeklyReset.addingTimeInterval(-24 * 60 * 60)
       snapshot = UsageSnapshot(
-        usedPercent: 21,
-        windowDurationMinutes: 0,
-        resetsAt: calendar.date(
-          from: DateComponents(
-            year: 2026,
-            month: 7,
-            day: 31,
-            hour: 11,
-            minute: 22
-          )
-        ),
-        planType: "intermediate",
-        limitName: "K3",
-        reachedLimitType: nil,
+        usedPercent: 21, windowDurationMinutes: 0, resetsAt: monthlyReset,
+        planType: "intermediate", limitName: "Kimi", reachedLimitType: nil,
         fiveHourWindow: UsageSubWindow(
-          usedPercent: 50,
-          windowDurationMinutes: 300,
-          resetsAt: calendar.date(
-            from: DateComponents(
-              year: 2026,
-              month: 7,
-              day: 31,
-              hour: 10,
-              minute: 22
-            )
-          )
-        )
+          usedPercent: 50, windowDurationMinutes: 300, resetsAt: shortReset
+        ),
+        quotaWindows: [
+          UsageQuotaWindow(kind: .monthly, usedPercent: 21, resetsAt: monthlyReset),
+          UsageQuotaWindow(kind: .weekly, usedPercent: 35, resetsAt: weeklyReset),
+          UsageQuotaWindow(kind: .fiveHour, usedPercent: 50, resetsAt: shortReset),
+        ]
       )
     }
     lastUpdated = calendar.date(
@@ -399,17 +388,8 @@ final class UsageViewModel: ObservableObject {
     _ snapshot: UsageSnapshot,
     updatedAt: Date
   ) {
-    let sharedSnapshot = SharedUsageSnapshot(
-      usedPercent: snapshot.usedPercent,
-      resetsAt: snapshot.resetsAt,
-      planType: snapshot.planType,
-      limitName: snapshot.limitName,
-      updatedAt: updatedAt,
-      windowDurationMinutes: snapshot.windowDurationMinutes,
-      languageCode: displayLanguage.rawValue,
-      subscriptionID: selectedSubscription.rawValue,
-      fiveHourUsedPercent: snapshot.fiveHourWindow?.usedPercent,
-      fiveHourResetsAt: snapshot.fiveHourWindow?.resetsAt
+    let sharedSnapshot = snapshot.shared(
+      subscription: selectedSubscription, language: displayLanguage, updatedAt: updatedAt
     )
 
     localUsageServer.update(sharedSnapshot)

@@ -15,18 +15,25 @@ enum DocumentationSnapshot {
       updateManager: updateManager,
       language: .constant(language)
     )
+    .fixedSize(horizontal: false, vertical: true)
     .background(Color(nsColor: .windowBackgroundColor))
     .environment(\.colorScheme, .light)
 
-    let renderer = ImageRenderer(content: content)
-    renderer.scale = 2
-    renderer.proposedSize = ProposedViewSize(width: 340, height: 475)
-
-    guard let image = renderer.cgImage else {
+    // AppKit-backed buttons are not supported by ImageRenderer. Capture the
+    // hosting view so the documentation includes the actual native controls.
+    let hostingView = NSHostingView(rootView: content)
+    hostingView.setFrameSize(hostingView.fittingSize)
+    let window = NSWindow(
+      contentRect: hostingView.bounds, styleMask: [.borderless],
+      backing: .buffered, defer: false
+    )
+    window.contentView = hostingView
+    hostingView.layoutSubtreeIfNeeded()
+    window.displayIfNeeded()
+    guard let bitmap = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds) else {
       throw DocumentationSnapshotError.renderFailed
     }
-
-    let bitmap = NSBitmapImageRep(cgImage: image)
+    hostingView.cacheDisplay(in: hostingView.bounds, to: bitmap)
     guard let pngData = bitmap.representation(using: .png, properties: [:]) else {
       throw DocumentationSnapshotError.encodingFailed
     }
@@ -47,7 +54,7 @@ private enum DocumentationSnapshotError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .renderFailed:
-      return "SwiftUI ImageRenderer did not produce an image"
+      return "AppKit could not capture the documentation view"
     case .encodingFailed:
       return "AppKit could not encode the documentation image as PNG"
     }

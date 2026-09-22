@@ -36,7 +36,8 @@ public actor CodexAppServerClient {
         return try decodeUsage(from: responses)
       } catch {
         lastError = error
-        let canRetry = index + 1 < configurations.count
+        let canRetry =
+          index + 1 < configurations.count
           && CodexAppServerProbeConfiguration.shouldRetry(after: error)
         if !canRetry {
           throw error

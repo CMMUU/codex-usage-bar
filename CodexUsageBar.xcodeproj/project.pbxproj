@@ -26,6 +26,7 @@
 		BED3C5D8D31711DBE430DB42 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F7F79DBC97C363AAAB5DFB9 /* AppLanguage.swift */; };
 		C15C602F8F419FD38693B620 /* CodexUsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87E3021DF7F9A701E8FDA81 /* CodexUsageWidget.swift */; };
 		C228EA747AFEC3B6560ACCA7 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 184D207E515A8E3BC472A09A /* Sparkle */; };
+		C626285519829C12906F997B /* UsageQuotaWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEEC35E53E284E6B52F1D68 /* UsageQuotaWindow.swift */; };
 		DA49989DBBE96ECB1761F99C /* libCodexUsageShared.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 464C371BD43D481345921981 /* libCodexUsageShared.a */; };
 		F0F9459FB505DF4E428B5C1B /* CodexUsageWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 40D04FF7EE0775B37B299FEC /* CodexUsageWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F5670BE71FF3872AED5ED4AE /* CodexModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2598D59EB5DCF8B1060DE846 /* CodexModels.swift */; };
@@ -39,6 +40,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 72DC45FD1BD7A4E5E5A44DF7;
 			remoteInfo = CodexUsageWidget;
+		};
+		772FC987FB53555527811876 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B390CEF7568CCC52828942A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3708D59862284AF711B3EC3B;
+			remoteInfo = CodexUsageShared;
 		};
 		91D2303E45C48975D5E22B88 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -93,6 +101,7 @@
 		966E4F72C09CBA6C5B7D1914 /* UsageMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMenuView.swift; sourceTree = "<group>"; };
 		9F7F79DBC97C363AAAB5DFB9 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		A06D789516C01E0E027B38FF /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		ACEEC35E53E284E6B52F1D68 /* UsageQuotaWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageQuotaWindow.swift; sourceTree = "<group>"; };
 		B62E6AACDE388B3D9F68AC13 /* libCodexUsageCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCodexUsageCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUsageStore.swift; sourceTree = "<group>"; };
 		CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSubscription.swift; sourceTree = "<group>"; };
@@ -200,6 +209,7 @@
 				CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */,
 				0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */,
 				C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */,
+				ACEEC35E53E284E6B52F1D68 /* UsageQuotaWindow.swift */,
 				CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */,
 				30702127D771354F007969A4 /* WidgetLanguage.swift */,
 			);
@@ -249,6 +259,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				B7942E8AA134612AE4C291C3 /* PBXTargetDependency */,
 			);
 			name = CodexUsageCore;
 			packageProductDependencies = (
@@ -415,6 +426,7 @@
 				3EB9B8473461E84AC7D12573 /* LocalUsageSnapshotBridge.swift in Sources */,
 				4E30216F25E52DFB4694ACC5 /* SharedUsageSnapshot.swift in Sources */,
 				551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */,
+				C626285519829C12906F997B /* UsageQuotaWindow.swift in Sources */,
 				F5DA4D7C405913D0324BA5BB /* UsageSubscription.swift in Sources */,
 				B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */,
 			);
@@ -474,6 +486,11 @@
 			isa = PBXTargetDependency;
 			target = 72DC45FD1BD7A4E5E5A44DF7 /* CodexUsageWidget */;
 			targetProxy = 2CC832F7AB4148F38AA6A3D0 /* PBXContainerItemProxy */;
+		};
+		B7942E8AA134612AE4C291C3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3708D59862284AF711B3EC3B /* CodexUsageShared */;
+			targetProxy = 772FC987FB53555527811876 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -538,7 +555,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -559,7 +576,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.3.4;
+				MARKETING_VERSION = 0.4.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -737,7 +754,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -752,7 +769,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.3.4;
+				MARKETING_VERSION = 0.4.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
