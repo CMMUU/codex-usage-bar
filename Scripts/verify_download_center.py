@@ -13,9 +13,17 @@ CENTER = 'https://downloads.cmmuu.com'
 FILES = 'https://files.cmmuu.com'
 PROJECT = 'codex-usage-bar'
 
+class PreserveHeadRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, response, code, message, headers, new_url):
+        redirected = super().redirect_request(request, response, code, message, headers, new_url)
+        if redirected is not None and request.get_method() == 'HEAD':
+            redirected.method = 'HEAD'
+        return redirected
+
 def get(url, limit=256 * 1024, method='GET', headers=None):
     request = urllib.request.Request(url, method=method, headers=headers or {})
-    with urllib.request.urlopen(request, timeout=25) as response:
+    opener = urllib.request.build_opener(PreserveHeadRedirects())
+    with opener.open(request, timeout=25) as response:
         body = response.read(limit + 1)
         if len(body) > limit:
             raise ValueError('Response exceeds expected size')
