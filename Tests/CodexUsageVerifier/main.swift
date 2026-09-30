@@ -155,7 +155,7 @@ struct CodexUsageVerifier {
       print("PASS 拒绝把短周期误认为周限额")
     }
 
-    try verifyExecutableOverride()
+    try verifyExecutableDiscovery()
     try verifySharedUsageStore()
     try verifyKimiUsageMapping()
     try verifyAppLanguage()
@@ -529,32 +529,80 @@ struct CodexUsageVerifier {
     }
   }
 
-  private static func verifyExecutableOverride() throws {
+  private static func verifyExecutableDiscovery() throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString, isDirectory: true)
-    try FileManager.default.createDirectory(
-      at: temporaryDirectory,
-      withIntermediateDirectories: true
-    )
+    let fileManager = IsolatedExecutableFileManager(rootDirectory: temporaryDirectory)
+    try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
     defer {
-      try? FileManager.default.removeItem(at: temporaryDirectory)
+      try? fileManager.removeItem(at: temporaryDirectory)
     }
 
-    let executable = temporaryDirectory.appendingPathComponent("codex")
-    try Data("#!/bin/sh\nexit 0\n".utf8).write(to: executable)
-    try FileManager.default.setAttributes(
-      [.posixPermissions: 0o755],
-      ofItemAtPath: executable.path
-    )
+    func makeExecutable(_ relativePath: String) throws -> URL {
+      let url = temporaryDirectory.appendingPathComponent(relativePath)
+      try fileManager.createDirectory(
+        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+      try Data("#!/bin/sh\nexit 0\n".utf8).write(to: url)
+      try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+      return url
+    }
 
-    let resolved = try CodexExecutableLocator.resolve(
-      environment: [
-        "CODEX_BINARY_PATH": executable.path,
-        "PATH": "",
-      ],
-      homeDirectory: temporaryDirectory.path
-    )
-    try expect(resolved.path == executable.path, "优先使用 CODEX_BINARY_PATH")
+    func resolve(_ environment: [String: String] = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin"])
+      throws -> URL
+    {
+      try CodexExecutableLocator.resolve(
+        environment: environment,
+        homeDirectory: temporaryDirectory.path,
+        fileManager: fileManager
+      )
+    }
+
+    let bundleRoot = "Applications/ChatGPT.app/Contents"
+    let legacy = try makeExecutable("\(bundleRoot)/Resources/codex")
+    let embedded = try makeExecutable(
+      "\(bundleRoot)/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")
+    let modernResolved = try resolve()
+    try expect(modernResolved == embedded, "GUI 精简 PATH 下优先发现新版 ChatGPT 内嵌 CLI")
+
+    let override = try makeExecutable("override/codex")
+    let overrideResolved = try resolve(["CODEX_BINARY_PATH": override.path, "PATH": ""])
+    try expect(overrideResolved == override, "显式 CLI 路径优先于应用内置版本")
+
+    try fileManager.removeItem(at: override)
+    let missingOverrideResolved = try resolve(["CODEX_BINARY_PATH": override.path])
+    try expect(missingOverrideResolved == embedded, "失效的显式 CLI 路径回退到应用内置版本")
+
+    try fileManager.createDirectory(at: override, withIntermediateDirectories: true)
+    let directoryResolved = try resolve(["CODEX_BINARY_PATH": override.path])
+    try expect(directoryResolved == embedded, "跳过可搜索目录，不将其识别为 CLI")
+
+    try fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: embedded.path)
+    let nonExecutableResolved = try resolve()
+    try expect(nonExecutableResolved == legacy, "新版文件不可执行时回退到旧版 CLI")
+
+    try fileManager.removeItem(at: embedded)
+    let legacyResolved = try resolve()
+    try expect(legacyResolved == legacy, "兼容旧版 Resources 内置 CLI")
+
+    try fileManager.removeItem(at: legacy)
+    let sharedSupport = try makeExecutable("\(bundleRoot)/SharedSupport/codex")
+    let sharedSupportResolved = try resolve()
+    try expect(sharedSupportResolved == sharedSupport, "兼容旧版 SharedSupport 内置 CLI")
+
+    try fileManager.removeItem(at: sharedSupport)
+    let userLocal = try makeExecutable(".local/bin/codex")
+    let pathExecutable = try makeExecutable("custom-bin/codex")
+    let pathEnvironment = ["PATH": pathExecutable.deletingLastPathComponent().path]
+    let userLocalResolved = try resolve(pathEnvironment)
+    try expect(userLocalResolved == userLocal, "无内置 CLI 时保留用户目录回退")
+
+    try fileManager.removeItem(at: userLocal)
+    let pathResolved = try resolve(pathEnvironment)
+    try expect(pathResolved == pathExecutable, "保留 PATH 安装方式兼容")
+
+    try fileManager.removeItem(at: pathExecutable)
+    let missingResolved = try? resolve(pathEnvironment)
+    try expect(missingResolved == nil, "未安装任何 CLI 时返回未找到错误")
   }
 
   private static func verifySharedUsageStore() throws {
@@ -828,5 +876,20 @@ private struct VerificationFailure: LocalizedError {
 
   var errorDescription: String? {
     "检查未通过：\(name)"
+  }
+}
+
+// Keep discovery fixtures independent of Codex installations on the test host.
+private final class IsolatedExecutableFileManager: FileManager, @unchecked Sendable {
+  private let rootDirectory: URL
+
+  init(rootDirectory: URL) {
+    self.rootDirectory = rootDirectory
+    super.init()
+  }
+
+  override func isExecutableFile(atPath path: String) -> Bool {
+    guard path.hasPrefix(rootDirectory.path + "/") else { return false }
+    return super.isExecutableFile(atPath: path)
   }
 }

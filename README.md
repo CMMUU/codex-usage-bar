@@ -127,7 +127,9 @@ flowchart LR
 The app discovers the Codex executable in this order:
 
 1. `CODEX_BINARY_PATH`
-2. The Codex binary bundled with the ChatGPT macOS app
+2. The Codex binary bundled with the ChatGPT macOS app, including the newer
+   `Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex` layout
+   and the older `Contents/Resources/codex` and `Contents/SharedSupport/codex` layouts
 3. Homebrew and common user-local binary directories
 4. The current `PATH`
 

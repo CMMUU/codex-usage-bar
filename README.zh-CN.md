@@ -119,7 +119,9 @@ flowchart LR
 Codex 可执行文件按以下顺序查找：
 
 1. `CODEX_BINARY_PATH`
-2. ChatGPT macOS 应用内置的 Codex
+2. ChatGPT macOS 应用内置的 Codex，支持新版
+   `Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex`
+   以及旧版 `Contents/Resources/codex`、`Contents/SharedSupport/codex`
 3. Homebrew 和常见用户级可执行目录
 4. 当前 `PATH`
 
