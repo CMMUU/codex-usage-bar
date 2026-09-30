@@ -8,7 +8,7 @@ plan, and refresh status without leaving the current workflow.
 
 - Website: https://codex.cmmuu.com/
 - Source code: https://github.com/CMMUU/codex-usage-bar
-- Latest release: https://github.com/CMMUU/codex-usage-bar/releases/latest
+- Latest release: https://downloads.cmmuu.com/projects/codex-usage-bar
 - Issues: https://github.com/CMMUU/codex-usage-bar/issues
 - License: https://github.com/CMMUU/codex-usage-bar/blob/main/LICENSE
 
@@ -24,3 +24,6 @@ plan, and refresh status without leaving the current workflow.
 
 Codex Usage Bar is an independent, unofficial community project. It is not
 affiliated with, endorsed by, or sponsored by OpenAI.
+
+- Latest macOS installer: https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal
+- GitHub backup downloads: https://github.com/CMMUU/codex-usage-bar/releases/latest

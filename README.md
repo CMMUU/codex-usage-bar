@@ -8,7 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [Website](https://codex.cmmuu.com/) ·
-[Latest release](https://github.com/CMMUU/codex-usage-bar/releases/latest) ·
+[Download center](https://downloads.cmmuu.com/projects/codex-usage-bar) ·
+[GitHub backup](https://github.com/CMMUU/codex-usage-bar/releases/latest) ·
 [中文文档](README.zh-CN.md)
 
 Codex Usage Bar is a free, open-source, native macOS menu bar app and WidgetKit
@@ -60,7 +61,8 @@ API-key-only or local-model sessions may not expose ChatGPT account rate limits.
 ## Install
 
 Download the latest universal DMG from
-[GitHub Releases](https://github.com/CMMUU/codex-usage-bar/releases/latest),
+[download center](https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal)
+([GitHub backup](https://github.com/CMMUU/codex-usage-bar/releases/latest)),
 open it, and drag **Codex Usage Bar** to **Applications**.
 
 The current GitHub build uses an ad-hoc signature. If macOS blocks the first
@@ -72,7 +74,9 @@ gallery to the desktop or Notification Center.
 
 Starting with v0.2.1, future releases can be installed from the update button
 inside the menu bar popover. Update archives and the appcast are verified with
-Sparkle EdDSA signatures.
+Sparkle EdDSA signatures. Starting with v0.4.2, in-app updates use the download
+center. Future releases are archived automatically after checksum and signature
+verification; existing installations can upgrade through their GitHub feed.
 
 Each release includes a `.sha256` file:
 

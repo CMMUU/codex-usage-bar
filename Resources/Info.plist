@@ -41,7 +41,7 @@
 	<key>SUEnableAutomaticChecks</key>
 	<false/>
 	<key>SUFeedURL</key>
-	<string>https://github.com/CMMUU/codex-usage-bar/releases/latest/download/appcast.xml</string>
+	<string>https://downloads.cmmuu.com/api/releases/codex-usage-bar/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>tdXqlQs0f8vhyDTjZvW7/yQp7d7e1zxyN1EpWoGc+70=</string>
 	<key>SURequireSignedFeed</key>

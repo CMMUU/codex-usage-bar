@@ -55,8 +55,19 @@ must only exist in the maintainer's macOS Keychain, an offline backup, and the
 GitHub Actions secret. Never add it to the repository, logs, release notes, or
 workflow arguments.
 
-Each release signs both the DMG enclosure and the appcast. The resulting
-`appcast.xml` is uploaded to GitHub Releases and served through:
+Each release signs the DMG and two separate appcasts. `appcast.xml` keeps the
+GitHub enclosure URL for existing installations. `appcast-center.xml` uses the
+immutable file URL on `files.cmmuu.com`. Both are uploaded to GitHub Releases;
+the center verifies hashes, both feed signatures and the DMG signature before
+publishing an archive. No signed content is rewritten.
+
+Starting with v0.4.2, the app uses:
+
+```text
+https://downloads.cmmuu.com/api/releases/codex-usage-bar/appcast.xml
+```
+
+The legacy GitHub feed remains available through:
 
 ```text
 https://github.com/CMMUU/codex-usage-bar/releases/latest/download/appcast.xml
@@ -85,7 +96,22 @@ https://github.com/CMMUU/codex-usage-bar/releases/latest/download/appcast.xml
 
 The release workflow builds a universal app, embeds and signs the WidgetKit
 extension and Sparkle framework, creates a DMG, generates a SHA-256 checksum,
-produces a signed Sparkle appcast and build attestation, and uploads the
+produces two signed Sparkle appcasts and build attestation, and uploads the
 artifacts to the matching GitHub Release. Without Apple credentials it uses an
 ad-hoc signature. With all Apple credentials configured, it also submits the
 DMG for notarization and staples the ticket.
+
+## Download center publication
+
+The registered Codex sync timer checks GitHub every five minutes. A release
+contains exactly four original assets: the universal DMG, its `.sha256`,
+`appcast.xml`, and `appcast-center.xml`. After GitHub publication the workflow
+waits up to ten minutes for the center and verifies the exact version, all four
+asset hashes, HEAD/Range responses, and byte-identical signed update feed.
+A failed mirror check fails the workflow; it does not substitute an older release.
+
+Permanent project page: `https://downloads.cmmuu.com/projects/codex-usage-bar`.
+Permanent installer: `https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal`.
+For a published version, do not rebuild or replace its signed bytes: fix any new
+release issue under a new version. Operational records belong in the
+[project documentation repository](https://github.com/CMMUU/project-docs).

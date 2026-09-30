@@ -10,7 +10,6 @@ SPARKLE_ARCHIVE_SHA256="ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec91
 DMG_NAME="Codex-Usage-Bar-v$VERSION-universal.dmg"
 DMG_PATH="$ROOT/dist/$DMG_NAME"
 RELEASE_NOTES="$ROOT/docs/release-notes/$TAG.md"
-APPCAST_PATH="$ROOT/dist/appcast.xml"
 
 if [[ -z "${SPARKLE_EDDSA_PRIVATE_KEY:-}" ]]; then
   printf 'Missing SPARKLE_EDDSA_PRIVATE_KEY\n' >&2
@@ -51,31 +50,33 @@ cp \
   "$RELEASE_NOTES" \
   "$ARCHIVES_DIR/${DMG_NAME%.dmg}.md"
 
-printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" \
-  | "$TEMP_DIR/bin/generate_appcast" \
-    --ed-key-file - \
-    --download-url-prefix \
-      "https://github.com/$REPOSITORY/releases/download/$TAG/" \
-    --embed-release-notes \
-    --link "https://codex.cmmuu.com/" \
-    --maximum-deltas 0 \
-    --maximum-versions 1 \
-    -o "$APPCAST_PATH" \
-    "$ARCHIVES_DIR"
-
-printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" \
-  | "$TEMP_DIR/bin/sign_update" \
-    --ed-key-file - \
-    "$APPCAST_PATH"
-printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" \
-  | "$TEMP_DIR/bin/sign_update" \
-    --ed-key-file - \
-    --verify \
-    "$APPCAST_PATH"
-
-xmllint --noout "$APPCAST_PATH"
-grep -q 'sparkle:edSignature=' "$APPCAST_PATH"
-grep -q 'sparkle-signatures:' "$APPCAST_PATH"
-grep -q "releases/download/$TAG/$DMG_NAME" "$APPCAST_PATH"
-
-printf 'Sparkle appcast: %s\n' "$APPCAST_PATH"
+# Keep the GitHub feed for existing installations and sign a separate center feed.
+# Neither feed is rewritten by the mirror after signing.
+for CHANNEL in github center; do
+  if [[ "$CHANNEL" == github ]]; then
+    APPCAST_PATH="$ROOT/dist/appcast.xml"
+    DOWNLOAD_PREFIX="https://github.com/$REPOSITORY/releases/download/$TAG/"
+  else
+    APPCAST_PATH="$ROOT/dist/appcast-center.xml"
+    DOWNLOAD_PREFIX="https://files.cmmuu.com/releases/codex-usage-bar/$TAG/"
+  fi
+  printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" \
+    | "$TEMP_DIR/bin/generate_appcast" \
+      --ed-key-file - \
+      --download-url-prefix "$DOWNLOAD_PREFIX" \
+      --embed-release-notes \
+      --link "https://codex.cmmuu.com/" \
+      --maximum-deltas 0 \
+      --maximum-versions 1 \
+      -o "$APPCAST_PATH" \
+      "$ARCHIVES_DIR"
+  printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" \
+    | "$TEMP_DIR/bin/sign_update" --ed-key-file - "$APPCAST_PATH"
+  printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" \
+    | "$TEMP_DIR/bin/sign_update" --ed-key-file - --verify "$APPCAST_PATH"
+  xmllint --noout "$APPCAST_PATH"
+  grep -q 'sparkle:edSignature=' "$APPCAST_PATH"
+  grep -q 'sparkle-signatures:' "$APPCAST_PATH"
+  grep -Fq "${DOWNLOAD_PREFIX}${DMG_NAME}" "$APPCAST_PATH"
+  printf 'Signed Sparkle appcast: %s\n' "$APPCAST_PATH"
+done

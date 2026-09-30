@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [项目官网](https://codex.cmmuu.com/) ·
-[最新版本](https://github.com/CMMUU/codex-usage-bar/releases/latest) ·
+[最新版本](https://downloads.cmmuu.com/projects/codex-usage-bar) ·
 [English](README.md)
 
 Codex Usage Bar 是一款免费、开源、原生的 macOS 菜单栏应用和 WidgetKit
@@ -57,7 +57,7 @@ Codex Usage Bar 是一款免费、开源、原生的 macOS 菜单栏应用和 Wi
 
 ## 安装
 
-从 [GitHub Releases](https://github.com/CMMUU/codex-usage-bar/releases/latest)
+从 [GitHub Releases](https://downloads.cmmuu.com/projects/codex-usage-bar)
 下载最新的 Universal DMG，打开后将 **Codex Usage Bar** 拖入
 **Applications**。
 
@@ -192,3 +192,5 @@ Release 查询接口。下载按钮始终指向 GitHub，不在 Cloudflare 保�
 
 Codex Usage Bar 是独立的非官方社区项目，与 OpenAI
 不存在隶属、认可或赞助关系。Codex 和 OpenAI 商标归其各自权利人所有。
+
+从 v0.4.2 起，应用内“检查更新”通过[下载中心](https://downloads.cmmuu.com/projects/codex-usage-bar)获取后续更新，继续核验 Sparkle EdDSA 签名。新版本自动同步并核验后更新固定入口；旧版仍可通过原 GitHub 更新源升级。下载中心不可用时可使用 [GitHub 备用下载](https://github.com/CMMUU/codex-usage-bar/releases/latest)。

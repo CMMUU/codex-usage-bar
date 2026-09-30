@@ -2,12 +2,14 @@ const GITHUB_OWNER = "CMMUU";
 const GITHUB_REPOSITORY = "codex-usage-bar";
 const GITHUB_RELEASE_API =
   `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/releases/latest`;
+const CENTER = "https://downloads.cmmuu.com";
+const PROJECT_PAGE = `${CENTER}/projects/codex-usage-bar`;
+const CENTER_RELEASE_API = `${CENTER}/api/projects/codex-usage-bar/releases/latest`;
 const RELEASE_FALLBACK = {
   tagName: "latest",
   name: "Latest release",
   publishedAt: null,
-  downloadUrl:
-    `https://github.com/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/releases/latest`,
+  downloadUrl: PROJECT_PAGE,
   downloadKind: "release",
   assetName: null,
   assetSize: null,
@@ -15,10 +17,10 @@ const RELEASE_FALLBACK = {
     `https://github.com/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/releases/latest`,
 };
 
-const RELEASE_CACHE_TTL_SECONDS = 300;
+const RELEASE_CACHE_TTL_SECONDS = 60;
 
 const JSON_HEADERS = {
-  "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=300",
+  "Cache-Control": "public, max-age=60, s-maxage=60",
   "Content-Type": "application/json; charset=utf-8",
   "X-Content-Type-Options": "nosniff",
 };
@@ -78,49 +80,92 @@ export function normalizeRelease(release) {
   };
 }
 
+export function normalizeCenterRelease(data) {
+  const tag = data?.version;
+  if (data?.schemaVersion !== 1 || data?.project !== "codex-usage-bar"
+      || !/^v\d+\.\d+\.\d+$/.test(tag ?? "")
+      || Object.keys(data.assets ?? {}).join() !== "macos-universal") {
+    throw new Error("Invalid download center release");
+  }
+  const asset = data.assets["macos-universal"];
+  const filename = `Codex-Usage-Bar-${tag}-universal.dmg`;
+  const downloadUrl = `${CENTER}/download/codex-usage-bar/latest/macos-universal`;
+  if (asset?.filename !== filename || asset.channel !== "hk" || asset.hkAvailable !== true
+      || !Number.isSafeInteger(asset.size) || asset.size <= 0 || asset.size > 64 * 1024 * 1024
+      || !/^[a-f0-9]{64}$/.test(asset.sha256 ?? "")
+      || asset.downloadUrl !== downloadUrl
+      || asset.fileUrl !== `https://files.cmmuu.com/releases/codex-usage-bar/${tag}/${filename}`) {
+    throw new Error("Invalid download center asset");
+  }
+  return {
+    tagName: tag, name: `Codex Usage Bar ${tag}`, publishedAt: data.publishedAt ?? null,
+    downloadUrl, downloadKind: "asset", assetName: filename, assetSize: asset.size,
+    releaseUrl: PROJECT_PAGE, source: "center",
+  };
+}
+
+async function fetchMetadata(url, headers, fetcher) {
+  const response = await fetcher(url, { headers, signal: AbortSignal.timeout(8000) });
+  if (!response.ok) throw new Error("Release metadata unavailable");
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("Empty release metadata");
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 256 * 1024) throw new Error("Release metadata exceeds limit");
+      chunks.push(value);
+    }
+  } finally {
+    await reader.cancel();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+export async function resolveLatestRelease(fetcher = fetch) {
+  try {
+    return normalizeCenterRelease(await fetchMetadata(CENTER_RELEASE_API, { Accept: "application/json" }, fetcher));
+  } catch {
+    // GitHub is an independent fallback when the center cannot verify its current archive.
+  }
+  try {
+    const release = await fetchMetadata(GITHUB_RELEASE_API, {
+      Accept: "application/vnd.github+json", "User-Agent": "codex-usage-bar-worker",
+      "X-GitHub-Api-Version": "2022-11-28",
+    }, fetcher);
+    if (!/^v\d+\.\d+\.\d+$/.test(release?.tag_name ?? "") || release.draft !== false || release.prerelease !== false) {
+      throw new Error("Invalid GitHub release");
+    }
+    const normalized = normalizeRelease(release);
+    if (normalized.assetName !== `Codex-Usage-Bar-${release.tag_name}-universal.dmg`
+        || normalized.downloadUrl !== `https://github.com/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/releases/download/${release.tag_name}/${normalized.assetName}`) {
+      throw new Error("Invalid GitHub download");
+    }
+    return { ...normalized, source: "github" };
+  } catch {
+    return { ...RELEASE_FALLBACK, source: "fallback" };
+  }
+}
+
 async function getLatestRelease(request, context) {
   const cache = caches.default;
   const cacheURL = new URL("/api/release", request.url);
-  const cacheBucket = Math.floor(
-    Date.now() / (RELEASE_CACHE_TTL_SECONDS * 1_000),
-  );
-  cacheURL.searchParams.set("bucket", String(cacheBucket));
+  cacheURL.searchParams.set("bucket", String(Math.floor(Date.now() / (RELEASE_CACHE_TTL_SECONDS * 1000))));
   const cacheKey = new Request(cacheURL, { method: "GET" });
   const cached = await cache.match(cacheKey);
-  if (cached) {
-    return cached;
-  }
-
-  try {
-    const response = await fetch(GITHUB_RELEASE_API, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "codex-usage-bar-worker",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
-
-    if (response.ok) {
-      const releaseResponse = Response.json(
-        { ...normalizeRelease(await response.json()), source: "github" },
-        { headers: JSON_HEADERS },
-      );
-      context.waitUntil(cache.put(cacheKey, releaseResponse.clone()));
-      return releaseResponse;
-    }
-  } catch {
-    // Fall through to a non-cached response while GitHub is unavailable.
-  }
-
-  return Response.json(
-    { ...RELEASE_FALLBACK, source: "fallback" },
-    {
-      headers: {
-        ...JSON_HEADERS,
-        "Cache-Control": "no-store",
-      },
-    },
-  );
+  if (cached) return request.method === "HEAD" ? new Response(null, cached) : cached;
+  const release = await resolveLatestRelease();
+  const response = Response.json(release, {
+    headers: { ...JSON_HEADERS, ...(release.source === "center" ? {} : { "Cache-Control": "no-store" }) },
+  });
+  if (release.source === "center") context.waitUntil(cache.put(cacheKey, response.clone()));
+  return request.method === "HEAD" ? new Response(null, response) : response;
 }
 
 export default {

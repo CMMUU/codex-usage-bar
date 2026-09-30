@@ -81,7 +81,7 @@ jobs:
           )" = "AppIcon.icns"
           test "$(
             plutil -extract SUFeedURL raw "$APP/Contents/Info.plist"
-          )" = "https://github.com/CMMUU/codex-usage-bar/releases/latest/download/appcast.xml"
+          )" = "https://downloads.cmmuu.com/api/releases/codex-usage-bar/appcast.xml"
           test "$(
             plutil -extract SURequireSignedFeed raw "$APP/Contents/Info.plist"
           )" = "true"

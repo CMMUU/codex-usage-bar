@@ -17,6 +17,7 @@ const translations = {
     source: "View source",
     requirements: "macOS 13+ · Universal",
     license: "MIT licensed",
+    downloadBackup: "GitHub backup",
     featureOneTitle: "Instant visibility",
     featureOneBody:
       "Weekly usage and reset time, without breaking your flow.",
@@ -90,6 +91,7 @@ const translations = {
     source: "查看源码",
     requirements: "macOS 13+ · Universal",
     license: "MIT 开源",
+    downloadBackup: "GitHub 备用下载",
     featureOneTitle: "状态一目了然",
     featureOneBody: "周限额和重置时间常驻菜单栏，不打断当前工作。",
     featureTwoTitle: "本地优先",
@@ -319,7 +321,7 @@ async function loadLatestRelease(force = false) {
 
       downloadButton.href = release.downloadUrl;
     } catch {
-      // Static GitHub fallback remains available when the release API is offline.
+      // The fixed center link and independent GitHub backup remain available when the release API is offline.
     }
   })();
 

@@ -167,7 +167,7 @@ jobs:
           )" = "AppIcon.icns"
           test "$(
             plutil -extract SUFeedURL raw "$APP/Contents/Info.plist"
-          )" = "https://github.com/CMMUU/codex-usage-bar/releases/latest/download/appcast.xml"
+          )" = "https://downloads.cmmuu.com/api/releases/codex-usage-bar/appcast.xml"
           test "$(
             plutil -extract SUVerifyUpdateBeforeExtraction raw \
               "$APP/Contents/Info.plist"
@@ -196,6 +196,7 @@ jobs:
             dist/Codex-Usage-Bar-v${{ steps.release.outputs.version }}-universal.dmg
             dist/Codex-Usage-Bar-v${{ steps.release.outputs.version }}-universal.dmg.sha256
             dist/appcast.xml
+            dist/appcast-center.xml
 
       - name: Publish GitHub Release
         env:
@@ -205,19 +206,19 @@ jobs:
           DMG="dist/Codex-Usage-Bar-v$VERSION-universal.dmg"
           CHECKSUM="$DMG.sha256"
           APPCAST="dist/appcast.xml"
+          CENTER_APPCAST="dist/appcast-center.xml"
           NOTES="docs/release-notes/$TAG.md"
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload \
-              "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" \
-              --clobber
-            gh release edit "$TAG" \
-              --title "Codex Usage Bar $TAG" \
-              --notes-file "$NOTES" \
-              --latest
-          else
-            gh release create "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" \
-              --title "Codex Usage Bar $TAG" \
-              --notes-file "$NOTES" \
-              --latest
+            echo "This version is already published; preserve its signed bytes and use a new version." >&2
+            exit 1
           fi
+          gh release create "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" "$CENTER_APPCAST" \
+            --title "Codex Usage Bar $TAG" \
+            --notes-file "$NOTES" \
+            --latest
+
+      - name: Verify download center publication
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: python3 Scripts/verify_download_center.py --version "$VERSION" --dist dist --wait-seconds 600
