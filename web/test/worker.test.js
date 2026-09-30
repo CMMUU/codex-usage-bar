@@ -132,7 +132,7 @@ test("center failure uses independent official GitHub asset", async () => {
     requests.push(url);
     if (url.startsWith("https://downloads.")) return new Response(null, { status: 503 });
     return Response.json({ tag_name: "v0.4.2", draft: false, prerelease: false, assets: [{
-      name: "Codex-Usage-Bar-v0.4.2-universal.dmg", size: 1234,
+      name: "Codex-Usage-Bar-v0.4.2-universal.dmg", size: 1234, digest: "sha256:" + "b".repeat(64),
       browser_download_url: "https://github.com/CMMUU/codex-usage-bar/releases/download/v0.4.2/Codex-Usage-Bar-v0.4.2-universal.dmg",
     }] });
   });
@@ -146,4 +146,15 @@ test("unavailable or oversized metadata never invents a current version", async 
   assert.equal(release.source, "fallback");
   assert.equal(release.tagName, "latest");
   assert.equal(release.downloadUrl, "https://downloads.cmmuu.com/projects/codex-usage-bar");
+});
+
+test("GitHub fallback rejects an installer without a verified asset identity", async () => {
+  const release = await resolveLatestRelease(async url => {
+    if (url.startsWith("https://downloads.")) return new Response(null, { status: 503 });
+    return Response.json({ tag_name: "v0.4.2", draft: false, prerelease: false, assets: [{
+      name: "Codex-Usage-Bar-v0.4.2-universal.dmg", size: 1234,
+      browser_download_url: "https://github.com/CMMUU/codex-usage-bar/releases/download/v0.4.2/Codex-Usage-Bar-v0.4.2-universal.dmg",
+    }] });
+  });
+  assert.equal(release.source, "fallback");
 });

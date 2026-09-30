@@ -143,7 +143,10 @@ export async function resolveLatestRelease(fetcher = fetch) {
       throw new Error("Invalid GitHub release");
     }
     const normalized = normalizeRelease(release);
-    if (normalized.assetName !== `Codex-Usage-Bar-${release.tag_name}-universal.dmg`
+    const selected = selectMacDownloadAsset(release.assets);
+    if (!Number.isSafeInteger(selected?.size) || selected.size <= 0 || selected.size > 64 * 1024 * 1024
+        || !/^sha256:[a-f0-9]{64}$/.test(selected?.digest ?? "")
+        || normalized.assetName !== `Codex-Usage-Bar-${release.tag_name}-universal.dmg`
         || normalized.downloadUrl !== `https://github.com/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/releases/download/${release.tag_name}/${normalized.assetName}`) {
       throw new Error("Invalid GitHub download");
     }
