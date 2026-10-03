@@ -80,6 +80,7 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
 }
 
 public enum SharedUsageConfiguration {
+  public static let refreshInterval: TimeInterval = 5 * 60
   public static let widgetKind = "io.cmmuu.codex-usage-bar.usage-widget"
   public static let fallbackAppGroupIdentifier =
     "group.io.cmmuu.codex-usage-bar"

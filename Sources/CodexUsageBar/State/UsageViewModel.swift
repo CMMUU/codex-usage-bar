@@ -19,6 +19,7 @@ final class UsageViewModel: ObservableObject {
 
   private let client: CodexAppServerClient
   private let kimiClient: KimiUsageClient
+  private let sharedWidgetStateStore: SharedWidgetStateStore
   private let sharedUsageStore: SharedUsageStore
   private let sharedWidgetPreferencesStore: SharedWidgetPreferencesStore
   private let localUsageServer: LocalUsageSnapshotServer
@@ -30,6 +31,7 @@ final class UsageViewModel: ObservableObject {
   init(
     client: CodexAppServerClient = CodexAppServerClient(),
     kimiClient: KimiUsageClient = KimiUsageClient(),
+    sharedWidgetStateStore: SharedWidgetStateStore = SharedWidgetStateStore(),
     sharedUsageStore: SharedUsageStore = SharedUsageStore(),
     sharedWidgetPreferencesStore: SharedWidgetPreferencesStore =
       SharedWidgetPreferencesStore(),
@@ -39,6 +41,7 @@ final class UsageViewModel: ObservableObject {
   ) {
     self.client = client
     self.kimiClient = kimiClient
+    self.sharedWidgetStateStore = sharedWidgetStateStore
     self.sharedUsageStore = sharedUsageStore
     self.sharedWidgetPreferencesStore = sharedWidgetPreferencesStore
     self.localUsageServer = localUsageServer
@@ -51,7 +54,9 @@ final class UsageViewModel: ObservableObject {
     self.displayLanguage = initialLanguage
     languageTransition = LanguageTransitionState(current: initialLanguage)
     selectedSubscription = UsageSubscription.resolve(
-      sharedWidgetPreferencesStore.load()?.subscriptionID
+      languageDefaults.string(forKey: UsageSubscription.storageKey)
+        ?? sharedWidgetStateStore.load()?.subscriptionID
+        ?? sharedWidgetPreferencesStore.load()?.subscriptionID
     )
     restoreCachedSnapshot()
     if sharedWidgetPreferencesStore.load()?.subscriptionID == "k3" {
@@ -102,6 +107,7 @@ final class UsageViewModel: ObservableObject {
     errorMessage = nil
     restoreCachedSnapshot()
     persistWidgetPreferences()
+    publishWidgetState()
     Task {
       await refresh()
     }
@@ -158,6 +164,7 @@ final class UsageViewModel: ObservableObject {
     }
     activated = true
     localUsageServer.start()
+    publishWidgetState()
     refreshLaunchAtLoginStatus()
     await refresh()
     startRefreshLoop()
@@ -201,7 +208,7 @@ final class UsageViewModel: ObservableObject {
       if let pendingLanguage = takePendingDisplayLanguage() {
         updateDisplayLanguageState(pendingLanguage)
       }
-      publishWidgetSnapshot(fetchedSnapshot, updatedAt: updatedAt)
+      publishWidgetState()
     } catch {
       guard requestedSubscription == selectedSubscription else { return }
       errorMessage =
@@ -227,7 +234,9 @@ final class UsageViewModel: ObservableObject {
   }
 
   private func restoreCachedSnapshot() {
-    guard let cached = sharedUsageStore.load(),
+    let state = sharedWidgetStateStore.load()
+    let storedSnapshot = state == nil ? sharedUsageStore.load() : state?.snapshot
+    guard let cached = storedSnapshot,
       UsageSubscription.resolve(cached.subscriptionID) == selectedSubscription
     else {
       return
@@ -314,7 +323,9 @@ final class UsageViewModel: ObservableObject {
     refreshLoop = Task { [weak self] in
       while !Task.isCancelled {
         do {
-          try await Task.sleep(nanoseconds: 300_000_000_000)
+          try await Task.sleep(
+            nanoseconds: UInt64(SharedUsageConfiguration.refreshInterval * 1_000_000_000)
+          )
         } catch {
           return
         }
@@ -331,6 +342,7 @@ final class UsageViewModel: ObservableObject {
   }
 
   private func persistWidgetPreferences() {
+    languageDefaults.set(selectedSubscription.rawValue, forKey: UsageSubscription.storageKey)
     do {
       try sharedWidgetPreferencesStore.save(
         SharedWidgetPreferences(
@@ -365,42 +377,33 @@ final class UsageViewModel: ObservableObject {
   private func updateDisplayLanguageState(_ language: AppLanguage) {
     displayLanguage = language
     languageDefaults.set(language.rawValue, forKey: AppLanguage.storageKey)
-    localUsageServer.updateLanguage(language.rawValue)
     persistWidgetPreferences()
   }
 
   private func commitDisplayLanguage(_ language: AppLanguage) {
     updateDisplayLanguageState(language)
-
-    if let snapshot {
-      publishWidgetSnapshot(
-        snapshot,
-        updatedAt: lastUpdated ?? Date()
-      )
-    } else {
-      WidgetCenter.shared.reloadTimelines(
-        ofKind: SharedUsageConfiguration.widgetKind
-      )
-    }
+    publishWidgetState()
   }
 
-  private func publishWidgetSnapshot(
-    _ snapshot: UsageSnapshot,
-    updatedAt: Date
-  ) {
-    let sharedSnapshot = snapshot.shared(
-      subscription: selectedSubscription, language: displayLanguage, updatedAt: updatedAt
+  private func publishWidgetState() {
+    let state = SharedWidgetState(
+      snapshot: displaySnapshot, languageCode: displayLanguage.rawValue,
+      subscriptionID: selectedSubscription.rawValue, publishedAt: Date()
     )
-
-    localUsageServer.update(sharedSnapshot)
+    localUsageServer.publish(state)
     do {
-      try sharedUsageStore.save(sharedSnapshot)
+      try sharedWidgetStateStore.save(state)
+      // Keep on-disk compatibility while an older extension is still loaded.
+      if let snapshot = state.snapshot {
+        try sharedUsageStore.save(snapshot)
+      } else {
+        try sharedUsageStore.clear()
+      }
     } catch {
-      fputs("Widget snapshot update failed: \(error)\n", stderr)
+      fputs("Widget state update failed: \(error)\n", stderr)
     }
     WidgetCenter.shared.reloadTimelines(
       ofKind: SharedUsageConfiguration.widgetKind
     )
   }
-
 }

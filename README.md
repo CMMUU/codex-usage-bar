@@ -78,6 +78,11 @@ Sparkle EdDSA signatures. Starting with v0.4.2, in-app updates use the download
 center. Future releases are archived automatically after checksum and signature
 verification; existing installations can upgrade through their GitHub feed.
 
+Widgets follow the app's selected subscription and read its latest complete
+state before falling back to disk caches. Quota, language, and subscription
+changes request a widget reload; routine refreshes are requested every five
+minutes. WidgetKit schedules the actual redraw, so a short delay is possible.
+
 Each release includes a `.sha256` file:
 
 ```bash

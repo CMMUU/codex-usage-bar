@@ -20,6 +20,7 @@
 		5130E3909B626E9983F3FDA5 /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFA933C5E8F4C001CAC9D8E0 /* UpdateManager.swift */; };
 		5207762E1C66FF0C8B645971 /* CodexExecutableLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9854879767FA111E08BD03 /* CodexExecutableLocator.swift */; };
 		551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */; };
+		5F3991E2CD5C5F5C27CAC822 /* SharedWidgetState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93ADD4F68098BB10D3475725 /* SharedWidgetState.swift */; };
 		9F673B2D4A996BC58DDE8351 /* libCodexUsageShared.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 464C371BD43D481345921981 /* libCodexUsageShared.a */; };
 		AF97574E9DF7F760F1AF0DBF /* UsageMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966E4F72C09CBA6C5B7D1914 /* UsageMenuView.swift */; };
 		B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30702127D771354F007969A4 /* WidgetLanguage.swift */; };
@@ -98,6 +99,7 @@
 		5964387CC7B9C1338680606C /* UsageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageViewModel.swift; sourceTree = "<group>"; };
 		715B1A9DFACEDD913D307D75 /* MenuBarLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabel.swift; sourceTree = "<group>"; };
 		7FCE3BE4C8AEFD6DBBEDDE34 /* CodexUsageBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageBarApp.swift; sourceTree = "<group>"; };
+		93ADD4F68098BB10D3475725 /* SharedWidgetState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedWidgetState.swift; sourceTree = "<group>"; };
 		966E4F72C09CBA6C5B7D1914 /* UsageMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMenuView.swift; sourceTree = "<group>"; };
 		9F7F79DBC97C363AAAB5DFB9 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		A06D789516C01E0E027B38FF /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
@@ -209,6 +211,7 @@
 				CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */,
 				0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */,
 				C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */,
+				93ADD4F68098BB10D3475725 /* SharedWidgetState.swift */,
 				ACEEC35E53E284E6B52F1D68 /* UsageQuotaWindow.swift */,
 				CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */,
 				30702127D771354F007969A4 /* WidgetLanguage.swift */,
@@ -426,6 +429,7 @@
 				3EB9B8473461E84AC7D12573 /* LocalUsageSnapshotBridge.swift in Sources */,
 				4E30216F25E52DFB4694ACC5 /* SharedUsageSnapshot.swift in Sources */,
 				551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */,
+				5F3991E2CD5C5F5C27CAC822 /* SharedWidgetState.swift in Sources */,
 				C626285519829C12906F997B /* UsageQuotaWindow.swift in Sources */,
 				F5DA4D7C405913D0324BA5BB /* UsageSubscription.swift in Sources */,
 				B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */,
@@ -555,7 +559,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -576,7 +580,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.4.2;
+				MARKETING_VERSION = 0.4.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -754,7 +758,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -769,7 +773,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.4.2;
+				MARKETING_VERSION = 0.4.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

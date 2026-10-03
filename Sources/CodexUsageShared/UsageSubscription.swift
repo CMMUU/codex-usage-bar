@@ -4,6 +4,8 @@ public enum UsageSubscription: String, CaseIterable, Codable, Identifiable, Send
   case codex
   case kimi
 
+  public static let storageKey = "usageSubscription"
+
   public var id: String {
     rawValue
   }

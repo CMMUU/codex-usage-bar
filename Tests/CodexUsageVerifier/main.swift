@@ -11,6 +11,7 @@ struct CodexUsageVerifier {
       try verifyModernKimiUsage()
       try await verifyAppServerCompatibility()
       try await verifyLocalSnapshotBridge()
+      try await WidgetSyncVerifier.run()
       if CommandLine.arguments.contains("--integration") {
         try await runIntegrationCheck()
       }
@@ -823,6 +824,25 @@ struct CodexUsageVerifier {
       }
     }
     try expect(received == expected, "本机回环同步 Widget 快照")
+
+    server.updateLanguage(AppLanguage.simplifiedChinese.rawValue)
+    let relabeled = await withCheckedContinuation { continuation in
+      client.loadPayload { continuation.resume(returning: $0) }
+    }
+    try expect(
+      relabeled?.languageCode == AppLanguage.simplifiedChinese.rawValue
+        && relabeled?.snapshot == expected,
+      "已有额度时语言切换同步到 Widget，不改变额度及其时间"
+    )
+    let switched = SharedWidgetState(
+      snapshot: nil, languageCode: AppLanguage.simplifiedChinese.rawValue,
+      subscriptionID: UsageSubscription.kimi.rawValue, publishedAt: updatedAt
+    )
+    server.publish(switched)
+    let cleared = await withCheckedContinuation { continuation in
+      client.loadPayload { continuation.resume(returning: $0) }
+    }
+    try expect(cleared == switched, "真实回环连接同步订阅切换与空额度状态")
 
     let languagePorts = [basePort + 10, basePort + 11, basePort + 12]
     let languageServer = LocalUsageSnapshotServer(ports: languagePorts)

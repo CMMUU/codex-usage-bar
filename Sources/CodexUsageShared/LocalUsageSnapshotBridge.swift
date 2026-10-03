@@ -8,18 +8,7 @@ public enum LocalUsageSnapshotBridgeConfiguration {
   public static let connectionTimeout: TimeInterval = 0.75
 }
 
-public struct LocalUsageSnapshotPayload: Codable, Equatable, Sendable {
-  public let snapshot: SharedUsageSnapshot?
-  public let languageCode: String?
-
-  public init(
-    snapshot: SharedUsageSnapshot?,
-    languageCode: String?
-  ) {
-    self.snapshot = snapshot
-    self.languageCode = languageCode
-  }
-}
+public typealias LocalUsageSnapshotPayload = SharedWidgetState
 
 public final class LocalUsageSnapshotServer: @unchecked Sendable {
   private let ports: [NWEndpoint.Port]
@@ -28,8 +17,7 @@ public final class LocalUsageSnapshotServer: @unchecked Sendable {
   )
   private let snapshotLock = NSLock()
 
-  private var snapshot: SharedUsageSnapshot?
-  private var languageCode: String?
+  private var state: SharedWidgetState?
   private var listener: NWListener?
   private var connections: [ObjectIdentifier: NWConnection] = [:]
   private var nextPortIndex = 0
@@ -67,16 +55,22 @@ public final class LocalUsageSnapshotServer: @unchecked Sendable {
     }
   }
 
-  public func update(_ snapshot: SharedUsageSnapshot) {
+  public func publish(_ state: SharedWidgetState) {
     snapshotLock.lock()
-    self.snapshot = snapshot
-    languageCode = snapshot.languageCode ?? languageCode
+    self.state = state.normalized
     snapshotLock.unlock()
+  }
+
+  public func update(_ snapshot: SharedUsageSnapshot) {
+    publish(SharedWidgetState(snapshot: snapshot, languageCode: snapshot.languageCode))
   }
 
   public func updateLanguage(_ languageCode: String) {
     snapshotLock.lock()
-    self.languageCode = languageCode
+    state = SharedWidgetState(
+      snapshot: state?.snapshot, languageCode: languageCode,
+      subscriptionID: state?.subscriptionID, publishedAt: Date()
+    )
     snapshotLock.unlock()
   }
 
@@ -156,23 +150,9 @@ public final class LocalUsageSnapshotServer: @unchecked Sendable {
     identifier: ObjectIdentifier
   ) {
     snapshotLock.lock()
-    let snapshot = self.snapshot
-    let languageCode = self.languageCode
+    let state = self.state
     snapshotLock.unlock()
-
-    let data: Data?
-    if let snapshot {
-      data = try? JSONEncoder().encode(snapshot)
-    } else if let languageCode {
-      data = try? JSONEncoder().encode(
-        LocalUsageSnapshotPayload(
-          snapshot: nil,
-          languageCode: languageCode
-        )
-      )
-    } else {
-      data = nil
-    }
+    let data = state.flatMap { try? JSONEncoder().encode($0) }
 
     guard
       let data,
@@ -271,31 +251,33 @@ public final class LocalUsageSnapshotClient: @unchecked Sendable {
       }
     }
 
+    var received = Data()
+    func receiveNext() {
+      guard !completed else { return }
+      connection.receive(
+        minimumIncompleteLength: 1,
+        maximumLength: LocalUsageSnapshotBridgeConfiguration.maximumPayloadSize + 1
+      ) { data, _, isComplete, error in
+        guard !completed else { return }
+        if let data { received.append(data) }
+        guard received.count <= LocalUsageSnapshotBridgeConfiguration.maximumPayloadSize,
+          error == nil
+        else {
+          finish(nil)
+          return
+        }
+        if isComplete {
+          finish(SharedWidgetState.decodeBridgeData(received))
+        } else {
+          receiveNext()
+        }
+      }
+    }
+
     connection.stateUpdateHandler = { state in
       switch state {
       case .ready:
-        connection.receive(
-          minimumIncompleteLength: 1,
-          maximumLength:
-            LocalUsageSnapshotBridgeConfiguration.maximumPayloadSize
-        ) { data, _, _, _ in
-          let payload = data.flatMap { data in
-            if let snapshot = try? JSONDecoder().decode(
-              SharedUsageSnapshot.self,
-              from: data
-            ) {
-              return LocalUsageSnapshotPayload(
-                snapshot: snapshot,
-                languageCode: snapshot.languageCode
-              )
-            }
-            return try? JSONDecoder().decode(
-              LocalUsageSnapshotPayload.self,
-              from: data
-            )
-          }
-          finish(payload)
-        }
+        receiveNext()
       case .failed, .cancelled:
         finish(nil)
       default:

@@ -22,6 +22,9 @@ private struct UsageTimelineEntry: TimelineEntry {
 }
 
 private struct UsageTimelineProvider: TimelineProvider {
+  private let appGroupStateStore = SharedWidgetStateStore()
+  private let widgetStateCacheStore = SharedWidgetStateStore(
+    directoryURL: Self.widgetCacheDirectory)
   private let appGroupStore = SharedUsageStore()
   private let widgetCacheStore = SharedUsageStore(
     directoryURL: Self.widgetCacheDirectory
@@ -68,7 +71,7 @@ private struct UsageTimelineProvider: TimelineProvider {
         languageCode: languageCode,
         subscriptionID: subscriptionID
       )
-      let routineRefresh = now.addingTimeInterval(15 * 60)
+      let routineRefresh = now.addingTimeInterval(SharedUsageConfiguration.refreshInterval)
       let refreshDate =
         snapshot?.displayQuotas.compactMap(\.resetsAt).min().map {
           min(routineRefresh, max(now.addingTimeInterval(60), $0))
@@ -83,54 +86,33 @@ private struct UsageTimelineProvider: TimelineProvider {
   private func loadSnapshot(
     completion: @escaping (SharedUsageSnapshot?, String?, String?) -> Void
   ) {
-    let sharedPreferences = appGroupPreferencesStore.load()
-    let sharedLanguageCode = sharedPreferences?.languageCode
-    let sharedSubscriptionID = sharedPreferences?.subscriptionID
-
-    if let snapshot = appGroupStore.load(),
-      sharedSubscriptionID == nil
-        || UsageSubscription.resolve(snapshot.subscriptionID)
-          == UsageSubscription.resolve(sharedSubscriptionID)
-    {
-      completion(
-        snapshot,
-        sharedLanguageCode ?? snapshot.languageCode,
-        sharedSubscriptionID ?? snapshot.subscriptionID
-      )
-      return
-    }
-
-    localClient.loadPayload { payload in
-      let candidate = payload?.snapshot ?? widgetCacheStore.load()
-      let snapshot = candidate.flatMap { value in
-        sharedSubscriptionID == nil
-          || UsageSubscription.resolve(value.subscriptionID)
-            == UsageSubscription.resolve(sharedSubscriptionID)
-          ? value : nil
-      }
-      let languageCode =
-        payload?.languageCode
-        ?? sharedLanguageCode
-        ?? widgetPreferencesCacheStore.load()?.languageCode
-        ?? snapshot?.languageCode
-      let subscriptionID =
-        sharedSubscriptionID
-        ?? snapshot?.subscriptionID
-
-      if let networkSnapshot = payload?.snapshot {
-        try? widgetCacheStore.save(networkSnapshot)
-      }
-      if let languageCode {
-        try? widgetPreferencesCacheStore.save(
-          SharedWidgetPreferences(
-            languageCode: languageCode,
-            subscriptionID: subscriptionID
-          )
+    // Always consult the running app. A readable App Group file can still be
+    // stale when the app has lost permission to write that container.
+    localClient.loadPayload { live in
+      let shared =
+        appGroupStateStore.load()
+        ?? legacyState(
+          snapshot: appGroupStore.load(), preferences: appGroupPreferencesStore.load()
         )
-      }
-
-      completion(snapshot, languageCode, subscriptionID)
+      let cached =
+        widgetStateCacheStore.load()
+        ?? legacyState(
+          snapshot: widgetCacheStore.load(), preferences: widgetPreferencesCacheStore.load()
+        )
+      let state = WidgetSnapshotResolver.resolve(live: live, shared: shared, cached: cached)
+      if let state { try? widgetStateCacheStore.save(state) }
+      completion(state?.snapshot, state?.languageCode, state?.subscriptionID)
     }
+  }
+
+  private func legacyState(
+    snapshot: SharedUsageSnapshot?, preferences: SharedWidgetPreferences?
+  ) -> SharedWidgetState? {
+    guard snapshot != nil || preferences != nil else { return nil }
+    return SharedWidgetState(
+      snapshot: snapshot, languageCode: preferences?.languageCode,
+      subscriptionID: preferences?.subscriptionID
+    )
   }
 
   private static let widgetCacheDirectory =
@@ -157,7 +139,7 @@ private struct UsageWidgetView: View {
 
   private var subscription: UsageSubscription {
     UsageSubscription.resolve(
-      entry.snapshot?.subscriptionID ?? entry.subscriptionID
+      entry.subscriptionID ?? entry.snapshot?.subscriptionID
     )
   }
 

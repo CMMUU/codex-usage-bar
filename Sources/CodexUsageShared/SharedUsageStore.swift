@@ -47,6 +47,13 @@ public struct SharedUsageStore {
     return try? JSONDecoder().decode(SharedUsageSnapshot.self, from: data)
   }
 
+  public func clear() throws {
+    guard let fileURL else { return }
+    if FileManager.default.fileExists(atPath: fileURL.path) {
+      try FileManager.default.removeItem(at: fileURL)
+    }
+  }
+
   public func save(_ snapshot: SharedUsageSnapshot) throws {
     guard let fileURL else {
       throw SharedUsageStoreError.appGroupUnavailable(
