@@ -4,9 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check src/worker.js && node --check public/theme-bootstrap.js && node --check public/app.js",
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/build.mjs --check && node --check src/worker.js && node --check public/theme-bootstrap.js && node --check public/app.js",
     "test": "node --test test/*.test.js",
+    "predev": "npm run build",
     "dev": "wrangler dev",
+    "predeploy": "npm run build && npm run check && npm test",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

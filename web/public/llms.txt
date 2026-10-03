@@ -1,29 +1,28 @@
 # Codex Usage Bar
 
-Codex Usage Bar is a free, open-source macOS menu bar application and native
-WidgetKit widget for viewing Codex weekly usage, remaining quota, reset time,
-plan, and refresh status without leaving the current workflow.
+Free, open-source macOS menu bar app and native WidgetKit widgets for viewing
+Codex and Kimi subscription quotas, remaining usage, and reset times.
 
 ## Official links
 
-- Website: https://codex.cmmuu.com/
-- Source code: https://github.com/CMMUU/codex-usage-bar
-- Latest release: https://downloads.cmmuu.com/projects/codex-usage-bar
+- Chinese website: https://codex.cmmuu.com/
+- English website: https://codex.cmmuu.com/en/
+- Source: https://github.com/CMMUU/codex-usage-bar
+- Download center: https://downloads.cmmuu.com/projects/codex-usage-bar
+- Latest universal DMG: https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal
+- GitHub backup: https://github.com/CMMUU/codex-usage-bar/releases/latest
 - Issues: https://github.com/CMMUU/codex-usage-bar/issues
 - License: https://github.com/CMMUU/codex-usage-bar/blob/main/LICENSE
 
-## Key facts
+## Facts
 
-- Platform: macOS 13 or later
-- Distribution: Universal DMG through GitHub Releases
-- License: MIT
-- Languages: English and Simplified Chinese
-- Data handling: local-first; no analytics, browser cookies, or copied tokens
-- Main features: menu bar usage, desktop and Notification Center widgets,
-  automatic refresh, launch at login, and secure automatic updates
-
-Codex Usage Bar is an independent, unofficial community project. It is not
-affiliated with, endorsed by, or sponsored by OpenAI.
-
-- Latest macOS installer: https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal
-- GitHub backup downloads: https://github.com/CMMUU/codex-usage-bar/releases/latest
+- Menu bar app: macOS 13 or later; desktop widgets: macOS 14 or later.
+- One universal DMG supports Apple silicon and Intel Macs.
+- Languages: Simplified Chinese and English.
+- The website shows illustrative data and does not read account credentials.
+- The app uses local Codex sign-in or Kimi Code credentials to query each service.
+- Available quota windows depend on the account and provider.
+- Signed automatic updates are delivered through the download center.
+- The app refreshes about every five minutes. macOS schedules widget refreshes.
+- The project is independent and unofficial, with no affiliation or endorsement
+  from OpenAI or Moonshot AI.

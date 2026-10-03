@@ -220,9 +220,9 @@ Sources/
 Tests/
 └── CodexUsageVerifier/  # Dependency-free verification executable
 web/
-├── public/              # Cyberpunk-inspired static landing page
-├── src/                 # Cloudflare Worker release endpoint
-└── test/                # Worker normalization tests
+├── public/              # Generated Chinese / English landing pages
+├── src/                 # Bilingual content, page renderer, release endpoint
+└── test/                # Release validation and localization tests
 ```
 
 ## Contributing

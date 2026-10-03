@@ -1,9 +1,9 @@
 {
   "name": "Codex Usage Bar",
   "short_name": "Codex Usage",
-  "description": "在 Mac 菜单栏与桌面小组件中查看 Codex 和 Kimi 订阅额度、剩余额度与重置时间。免费开源，支持 Apple 与 Intel 芯片。",
-  "lang": "zh-Hans",
-  "start_url": "/",
+  "description": "Keep Codex and Kimi quotas in your Mac menu bar and desktop widgets. Free, open source, and built for a quick glance. Download for macOS.",
+  "lang": "en",
+  "start_url": "/en/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FAFBFE",

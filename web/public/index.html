@@ -1,460 +1,92 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Codex Usage Bar — Codex Usage Monitor for macOS</title>
-    <meta
-      name="description"
-      content="Track Codex weekly usage, remaining quota, and reset time from the macOS menu bar and native widgets. Free, open source, and privacy-first."
-    >
-    <meta
-      name="keywords"
-      content="Codex usage, Codex weekly limit, Codex quota, macOS menu bar, Codex widget, OpenAI Codex, Codex Usage Bar"
-    >
-    <meta name="author" content="CMMUU">
-    <meta name="application-name" content="Codex Usage Bar">
-    <meta name="apple-mobile-web-app-title" content="Codex Usage Bar">
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-    <meta name="color-scheme" content="dark light">
-    <meta name="theme-color" content="#07090f">
-
-    <link rel="canonical" href="https://codex.cmmuu.com/">
-    <link rel="manifest" href="/manifest.webmanifest?v=quota-orbit-20261003">
-    <link rel="icon" href="/assets/favicon.svg?v=quota-orbit-20261003" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=quota-orbit-20261003" sizes="180x180">
-
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Codex Usage Bar">
-    <meta property="og:title" content="Codex Usage Bar — Codex Usage Monitor for macOS">
-    <meta
-      property="og:description"
-      content="Track Codex weekly usage, remaining quota, and reset time from the macOS menu bar and native widgets. Free and open source."
-    >
-    <meta property="og:url" content="https://codex.cmmuu.com/">
-    <meta property="og:locale" content="en_US">
-    <meta property="og:locale:alternate" content="zh_CN">
-    <meta property="og:image" content="https://codex.cmmuu.com/assets/og-cover.png?v=quota-orbit-20261003">
-    <meta property="og:image:secure_url" content="https://codex.cmmuu.com/assets/og-cover.png?v=quota-orbit-20261003">
-    <meta property="og:image:type" content="image/png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta
-      property="og:image:alt"
-      content="Codex Usage Bar blue-purple quota orbit logo and Codex &amp; Kimi quota monitor"
-    >
-
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Codex Usage Bar — Codex Usage Monitor for macOS">
-    <meta
-      name="twitter:description"
-      content="See Codex weekly usage, remaining quota, and reset time without leaving your workflow."
-    >
-    <meta name="twitter:image" content="https://codex.cmmuu.com/assets/og-cover.png?v=quota-orbit-20261003">
-    <meta
-      name="twitter:image:alt"
-      content="Codex Usage Bar blue-purple quota orbit logo and Codex &amp; Kimi quota monitor"
-    >
-
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Codex Usage Bar","alternateName":"Codex 周限额菜单栏工具","url":"https://codex.cmmuu.com/","downloadUrl":"https://downloads.cmmuu.com/projects/codex-usage-bar","codeRepository":"https://github.com/CMMUU/codex-usage-bar","applicationCategory":"DeveloperApplication","applicationSubCategory":"ProductivityApplication","operatingSystem":"macOS 13 or later","softwareRequirements":"A local Codex installation signed in with a ChatGPT account that exposes usage limits","description":"A free, open-source macOS menu bar app and WidgetKit widget for checking Codex weekly usage, remaining quota, and reset time without leaving your workflow.","screenshot":"https://codex.cmmuu.com/assets/og-cover.png?v=quota-orbit-20261003","image":"https://codex.cmmuu.com/assets/og-cover.png?v=quota-orbit-20261003","license":"https://github.com/CMMUU/codex-usage-bar/blob/main/LICENSE","isAccessibleForFree":true,"inLanguage":["en","zh-CN"],"featureList":["Codex weekly usage in the macOS menu bar","Remaining quota and reset time","Native macOS desktop and Notification Center widgets","Simplified Chinese and English interface","Local-first usage retrieval","Secure automatic updates"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://downloads.cmmuu.com/projects/codex-usage-bar"},"author":{"@type":"Organization","name":"CMMUU","url":"https://cmmuu.com/"},"publisher":{"@type":"Organization","name":"CMMUU","url":"https://cmmuu.com/"},"sameAs":["https://github.com/CMMUU/codex-usage-bar"]}</script>
-
-    <script src="/theme-bootstrap.js"></script>
-    <link rel="stylesheet" href="/styles.css?v=1535a43c">
-    <script src="/app.js?v=c4949e76" type="module"></script>
-  </head>
-  <body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="ambient ambient-one" aria-hidden="true"></div>
-    <div class="ambient ambient-two" aria-hidden="true"></div>
-
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="Codex Usage Bar home">
-        <img class="brand-mark" src="/assets/brand-mark.png?v=quota-orbit-20261003" width="32" height="32" alt="">
-        <span>CODEX <b>USAGE</b></span>
-      </a>
-      <nav class="header-actions" aria-label="Primary navigation">
-        <button class="theme-toggle" id="theme-toggle" type="button">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3.75"></circle>
-            <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.28 5.28 6.7 6.7M17.3 17.3l1.42 1.42M18.72 5.28 17.3 6.7M6.7 17.3l-1.42 1.42"></path>
-          </svg>
-          <span id="theme-label">AUTO</span>
-        </button>
-        <button class="language-toggle" id="language-toggle" type="button">
-          中文
-        </button>
-        <a
-          class="github-link"
-          href="https://github.com/CMMUU/codex-usage-bar"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M12 .7a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.28-5.27-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.47.11-3.05 0 0 .97-.31 3.16 1.18a10.9 10.9 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.58.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.71 5.38-5.29 5.67.42.36.79 1.06.79 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/>
-          </svg>
-          GitHub
-        </a>
-      </nav>
-    </header>
-
-    <main id="main">
-      <section class="hero">
-        <div class="hero-copy">
-          <div class="eyebrow">
-            <span class="pulse-dot"></span>
-            <span data-copy="eyebrow">Native macOS menu bar utility</span>
+<html lang="zh-Hans" data-provider="codex" data-widget-size="small">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex Usage Bar — 留点余量，给下一个好想法</title>
+  <meta name="description" content="在 Mac 菜单栏与桌面小组件中查看 Codex 和 Kimi 订阅额度、剩余额度与重置时间。免费开源，支持 Apple 与 Intel 芯片。">
+  <meta name="theme-color" content="#FAFBFE">
+  <link rel="canonical" href="https://codex.cmmuu.com/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://codex.cmmuu.com/">
+  <link rel="alternate" hreflang="en" href="https://codex.cmmuu.com/en/">
+  <link rel="alternate" hreflang="x-default" href="https://codex.cmmuu.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Codex Usage Bar">
+  <meta property="og:title" content="Codex Usage Bar — 留点余量，给下一个好想法">
+  <meta property="og:description" content="在 Mac 菜单栏与桌面小组件中查看 Codex 和 Kimi 订阅额度、剩余额度与重置时间。免费开源，支持 Apple 与 Intel 芯片。">
+  <meta property="og:url" content="https://codex.cmmuu.com/">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:image" content="https://codex.cmmuu.com/assets/icon-512.png?v=quota-orbit-20261003">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="/favicon.svg?v=quota-orbit-20261003" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=quota-orbit-20261003">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preload" href="/assets/fonts/noto-serif-sc.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="/theme-bootstrap.js?v=20261003b"></script>
+  <link rel="stylesheet" href="/styles.css?v=20261003b">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Codex Usage Bar","operatingSystem":"macOS 13+","applicationCategory":"UtilitiesApplication","url":"https://codex.cmmuu.com/","description":"在 Mac 菜单栏与桌面小组件中查看 Codex 和 Kimi 订阅额度、剩余额度与重置时间。免费开源，支持 Apple 与 Intel 芯片。","inLanguage":"zh-Hans","downloadUrl":"https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"CMMUU","url":"https://github.com/CMMUU"}}</script>
+  <script type="module" src="/app.js?v=20261003b"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳至正文</a>
+  <header class="site-header wrap">
+    <a class="brand" href="/" aria-label="Codex Usage Bar"><img class="brand-mark " src="/assets/brand-mark.png?v=quota-orbit-20261003" width="48" height="48" alt=""><span>Codex Usage Bar</span></a>
+    <nav aria-label="主导航">
+      <a class="section-nav" href="#widgets">小组件</a>
+      <a class="section-nav" href="#start">开始使用</a>
+      <a class="language-link" href="/en/" lang="en" hreflang="en" aria-label="Switch to English">EN</a>
+      <button class="theme-toggle" type="button" aria-label="切换到深色外观" hidden><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14A9 9 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z"/></svg><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg></button>
+    </nav>
+  </header>
+  <main id="main" class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title"><span>留点余量，</span><span>给下一个</span><span class="accent">好想法。</span></h1>
+        <p class="intro"><span>在菜单栏里，轻松查看 Codex 与 Kimi 额度。</span><span>用了多少、何时重置，心里有数。</span></p>
+        <div class="hero-actions"><a class="button download-link " href="https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal"><svg class="icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 15v5h16v-5"/></svg><span>下载 macOS 版</span></a><a class="source-link" href="https://github.com/CMMUU/codex-usage-bar">查看源码<svg class="icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></a></div>
+        <p class="compatibility">免费开源 · macOS 13+ · Apple 与 Intel 芯片</p>
+      </div>
+      <figure class="hero-stage" aria-label="可交互的额度预览">
+        <div class="orbits" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="menu-preview" aria-hidden="true"><span><img class="brand-mark " src="/assets/brand-mark.png?v=quota-orbit-20261003" width="48" height="48" alt=""><b data-demo="menu">Codex 64%</b></span><span class="system-icons"><svg class="icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8 16a6 6 0 0 1 8 0M12 20h.01"/></svg><svg class="icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg><svg class="icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="7" rx="3.5"/><rect x="3" y="14" width="18" height="7" rx="3.5"/><path d="M8 6.5h.01M16 17.5h.01"/></svg><span>Mon 10:41</span></span></div>
+        <div class="quota-card">
+          <div class="quota-brand"><img class="brand-mark " src="/assets/brand-mark.png?v=quota-orbit-20261003" width="48" height="48" alt=""><strong data-demo="name">Codex</strong></div>
+          <div class="provider-picker segmented" role="group" aria-label="预览订阅">
+            <button type="button" data-provider-choice="codex" aria-pressed="true">Codex</button>
+            <button type="button" data-provider-choice="kimi" aria-pressed="false">Kimi</button>
           </div>
-          <h1>
-            <span data-copy="headlineOne">Your Codex limit.</span>
-            <span class="accent-text" data-copy="headlineTwo">One glance away.</span>
-          </h1>
-          <p class="hero-description" data-copy="heroDescription">
-            Stop digging through account menus. See weekly usage, remaining
-            quota, and reset time from your menu bar or macOS widgets.
-          </p>
-          <div class="hero-actions">
-            <a
-              class="primary-button"
-              id="download-button"
-              href="https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14"/>
-              </svg>
-              <span data-copy="download">Get for macOS</span>
-            </a>
-            <a
-              class="secondary-button"
-              href="https://github.com/CMMUU/codex-usage-bar"
-              target="_blank"
-              rel="noreferrer"
-              data-copy="source"
-            >
-              View source
-            </a>
-          </div>
-          <div class="release-line">
-            <span data-copy="requirements">macOS 13+ · Universal</span>
-            <span class="release-separator"></span>
-            <span data-copy="license">MIT licensed</span>
-            <span class="release-separator"></span>
-            <a href="https://github.com/CMMUU/codex-usage-bar/releases/latest" target="_blank" rel="noreferrer" data-copy="downloadBackup">GitHub backup</a>
+          <div class="quota-readout" aria-live="polite" aria-atomic="true">
+            <div class="quota-window"><span data-demo="primary">周额度</span><div class="quota-values"><strong data-demo="used">64%</strong><span data-demo="remaining">剩余 36%</span></div><progress data-progress="primary" value="64" max="100" aria-label="周额度">64%</progress></div>
+            <div class="quota-window weekly-window" hidden><span>周额度</span><div class="quota-values"><strong>35%</strong></div><progress value="35" max="100" aria-label="周额度">35%</progress></div>
+            <div class="quota-window"><span>5 小时额度</span><div class="quota-values"><strong data-demo="fiveHour">45%</strong></div><progress data-progress="fiveHour" value="45" max="100" aria-label="5 小时额度">45%</progress></div>
+            <div class="reset-line"><svg class="icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/></svg><span data-demo="reset">3 天后重置</span></div>
           </div>
         </div>
-
-        <div class="product-stage" aria-label="Codex Usage Bar preview">
-          <div class="stage-orbit orbit-one" aria-hidden="true"></div>
-          <div class="stage-orbit orbit-two" aria-hidden="true"></div>
-          <div class="menu-bar-fragment" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span class="menu-status">
-              <span class="menu-brand-mark"></span>
-              <span>Codex 64%</span>
-            </span>
-          </div>
-          <figure class="app-preview">
-            <div class="preview-topline">
-              <span>LIVE / WEEKLY LIMIT</span>
-              <span class="preview-topline-actions">
-                <span class="preview-interaction-hint">
-                  <svg aria-hidden="true" viewBox="0 0 24 24">
-                    <path d="m5 3 11 10-5.4 1 3 5.2-2.4 1.4-3-5.2L4 19Z"></path>
-                  </svg>
-                  <span data-copy="popoverSwitchHint">CLICK 中 / EN TO SWITCH</span>
-                </span>
-                <span class="signal-bars"><i></i><i></i><i></i></span>
-              </span>
-            </div>
-            <div class="app-preview-image">
-              <img
-                id="popover-preview-image"
-                src="/assets/usage-popover-zh-Hans-v0.4.4.png"
-                width="680"
-                height="1002"
-                alt="Codex Usage Bar showing weekly usage and remaining quota"
-              >
-              <div
-                class="popover-language-hotspot"
-                id="popover-language-switch"
-                role="group"
-                aria-label="App preview language"
-              >
-                <button
-                  type="button"
-                  data-popover-locale="zh"
-                  aria-label="中文界面"
-                ></button>
-                <button
-                  type="button"
-                  data-popover-locale="en"
-                  aria-label="English interface"
-                ></button>
-              </div>
-            </div>
-            <div class="scan-line" aria-hidden="true"></div>
-          </figure>
-          <div class="stage-label label-left" aria-hidden="true">01 / LOCAL</div>
-          <div class="stage-label label-right" aria-hidden="true">STATUS / ONLINE</div>
+        <small class="illustrative">示例数据</small>
+        <figcaption>看一眼，继续专注。</figcaption>
+      </figure>
+    </section>
+    <section id="widgets" class="widgets-section" aria-labelledby="widget-title">
+      <div class="section-heading"><h2 id="widget-title"><span>桌面上，</span><span>多一份从容。</span></h2><p><span>让额度，安静地待在视线里。</span><span>小号与中号小组件，和应用保持同步。</span></p></div>
+      <div class="widget-stage">
+        <div class="widgets-display">
+          <div class="widget widget-small" data-size="small" aria-label="小号"><div class="widget-brand"><img class="brand-mark " src="/assets/brand-mark.png?v=quota-orbit-20261003" width="48" height="48" alt=""><b data-demo="name">Codex</b></div><div class="ring"><svg viewBox="0 0 160 160" aria-hidden="true"><defs><linearGradient id="small-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#473aee"/><stop offset="100%" stop-color="#6d97ff"/></linearGradient></defs><circle class="ring-track" cx="80" cy="80" r="67"/><circle class="ring-progress" cx="80" cy="80" r="67" pathLength="100" stroke="url(#small-ring)" stroke-dasharray="64 100"/></svg><strong data-demo="used">64%</strong></div><span class="widget-remaining" data-demo="remaining">剩余 36%</span></div>
+          <div class="widget widget-medium" data-size="medium" aria-label="中号"><div class="widget-brand"><img class="brand-mark " src="/assets/brand-mark.png?v=quota-orbit-20261003" width="48" height="48" alt=""><b data-demo="name">Codex</b></div><div class="medium-content"><div class="ring"><svg viewBox="0 0 160 160" aria-hidden="true"><defs><linearGradient id="medium-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#473aee"/><stop offset="100%" stop-color="#6d97ff"/></linearGradient></defs><circle class="ring-track" cx="80" cy="80" r="67"/><circle class="ring-progress" cx="80" cy="80" r="67" pathLength="100" stroke="url(#medium-ring)" stroke-dasharray="64 100"/></svg><strong data-demo="used">64%</strong></div><dl><div><dt data-demo="primary">周额度</dt><dd data-demo="used">64%</dd></div><div><dt>剩余额度</dt><dd data-demo="remainingValue">36%</dd></div><div><dt>重置时间</dt><dd data-demo="days">3 天后</dd></div></dl></div></div>
         </div>
-      </section>
-
-      <section class="feature-strip" aria-label="Highlights">
-        <article>
-          <span class="feature-number">01</span>
-          <div>
-            <h2 data-copy="featureOneTitle">Instant visibility</h2>
-            <p data-copy="featureOneBody">Weekly usage and reset time, without breaking your flow.</p>
-          </div>
-        </article>
-        <article>
-          <span class="feature-number">02</span>
-          <div>
-            <h2 data-copy="featureTwoTitle">Local by design</h2>
-            <p data-copy="featureTwoBody">Talks to your local Codex app-server. No copied tokens.</p>
-          </div>
-        </article>
-        <article>
-          <span class="feature-number">03</span>
-          <div>
-            <h2 data-copy="featureThreeTitle">Widget-ready</h2>
-            <p data-copy="featureThreeBody">Keep usage visible on the desktop or in Notification Center.</p>
-          </div>
-        </article>
-      </section>
-
-      <section class="widget-section" id="widgets" aria-labelledby="widget-title">
-        <div class="widget-intro">
-          <div class="widget-copy">
-            <div class="section-kicker">WIDGETS / 02</div>
-            <h2 id="widget-title" data-copy="widgetTitle">
-              Your usage.<br>Always in view.
-            </h2>
-            <p data-copy="widgetDescription">
-              Add Codex Usage Bar to your desktop or Notification Center.
-              Choose a compact glance or a detailed weekly overview.
-            </p>
-
-            <div class="widget-benefits">
-              <article>
-                <span>01</span>
-                <div>
-                  <h3 data-copy="widgetLayoutTitle">Two useful sizes</h3>
-                  <p data-copy="widgetLayoutBody">
-                    Small for the essentials. Medium for the full weekly picture.
-                  </p>
-                </div>
-              </article>
-              <article>
-                <span>02</span>
-                <div>
-                  <h3 data-copy="widgetSyncTitle">Local snapshot sync</h3>
-                  <p data-copy="widgetSyncBody">
-                    Usage stays on your Mac and the last available snapshot remains visible.
-                  </p>
-                </div>
-              </article>
-            </div>
-          </div>
-
-          <div class="widget-showcase" aria-label="Codex Usage Bar widget previews">
-            <div class="widget-showcase-topline">
-              <span>WIDGETKIT / LIVE</span>
-              <div class="widget-showcase-controls">
-                <span class="widget-showcase-status">
-                  <i aria-hidden="true"></i>
-                  <span
-                    data-copy="widgetSynced"
-                    data-widget-copy="widgetSynced"
-                  >SYNCED LOCALLY</span>
-                </span>
-              </div>
-            </div>
-
-            <div class="widget-canvas">
-              <div class="widget-preview-group widget-preview-small">
-                <span
-                  class="widget-size-label"
-                  data-copy="widgetSmallLabel"
-                  data-widget-copy="widgetSmallLabel"
-                >SMALL</span>
-                <div class="widget-card widget-card-small">
-                  <div class="widget-card-header">
-                    <strong class="widget-brand"><img src="/assets/brand-mark.png?v=quota-orbit-20261003" width="18" height="18" alt="">CODEX</strong>
-                    <i aria-hidden="true"></i>
-                  </div>
-                  <div class="widget-small-metrics">
-                    <div class="widget-ring" aria-label="64% used">
-                      <div>
-                        <strong>64%</strong>
-                        <span
-                          data-copy="widgetUsedShort"
-                          data-widget-copy="widgetUsedShort"
-                        >USED</span>
-                      </div>
-                    </div>
-                    <div class="widget-remaining">
-                      <span
-                        data-copy="widgetRemaining"
-                        data-widget-copy="widgetRemaining"
-                      >REMAINING</span>
-                      <strong>36%</strong>
-                    </div>
-                  </div>
-                  <div class="widget-reset">
-                    <svg aria-hidden="true" viewBox="0 0 24 24">
-                      <path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7"/>
-                    </svg>
-                    <span
-                      data-copy="widgetResetValue"
-                      data-widget-copy="widgetResetValue"
-                    >RESET JUL 31 · 18:00</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="widget-preview-group widget-preview-medium">
-                <span
-                  class="widget-size-label"
-                  data-copy="widgetMediumLabel"
-                  data-widget-copy="widgetMediumLabel"
-                >MEDIUM</span>
-                <div class="widget-card widget-card-medium">
-                  <div class="widget-medium-primary">
-                    <div class="widget-card-header">
-                      <strong class="widget-brand"><img src="/assets/brand-mark.png?v=quota-orbit-20261003" width="18" height="18" alt="">CODEX</strong>
-                      <i aria-hidden="true"></i>
-                    </div>
-                    <div class="widget-ring widget-ring-medium" aria-label="64% used">
-                      <div>
-                        <strong>64%</strong>
-                        <span
-                          data-copy="widgetUsedShort"
-                          data-widget-copy="widgetUsedShort"
-                        >USED</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="widget-medium-divider" aria-hidden="true"></div>
-                  <div class="widget-medium-metrics">
-                    <div>
-                      <span
-                        data-copy="widgetWeeklyUsed"
-                        data-widget-copy="widgetWeeklyUsed"
-                      >WEEKLY USED</span>
-                      <strong>64%</strong>
-                    </div>
-                    <div>
-                      <span
-                        data-copy="widgetRemaining"
-                        data-widget-copy="widgetRemaining"
-                      >REMAINING</span>
-                      <strong>36%</strong>
-                    </div>
-                    <div>
-                      <span
-                        data-copy="widgetReset"
-                        data-widget-copy="widgetReset"
-                      >RESET</span>
-                      <strong
-                        data-copy="widgetResetDate"
-                        data-widget-copy="widgetResetDate"
-                      >JUL 31 · 18:00</strong>
-                    </div>
-                    <small
-                      data-copy="widgetUpdated"
-                      data-widget-copy="widgetUpdated"
-                    >UPDATED 15:42</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="widget-install">
-          <div>
-            <span class="section-kicker">SETUP / 03</span>
-            <h3 data-copy="widgetInstallTitle">Add it in three steps.</h3>
-          </div>
-          <ol>
-            <li>
-              <span>01</span>
-              <p data-copy="widgetInstallOne">
-                Open Codex Usage Bar once and refresh your usage.
-              </p>
-            </li>
-            <li>
-              <span>02</span>
-              <p data-copy="widgetInstallTwo">
-                Open Edit Widgets from the desktop or Notification Center.
-              </p>
-            </li>
-            <li>
-              <span>03</span>
-              <p data-copy="widgetInstallThree">
-                Search for “Codex” and choose the small or medium layout.
-              </p>
-            </li>
-          </ol>
-        </div>
-      </section>
-
-      <section class="story-section">
-        <div class="section-kicker">WHY / 00</div>
-        <div class="story-grid">
-          <h2 data-copy="storyTitle">Stay in flow.<br>Keep usage in sight.</h2>
-          <div class="story-copy">
-            <p data-copy="storyBody">
-              Checking Codex usage used to mean opening the account menu, then
-              opening usage details. This tiny app turns that repeated detour
-              into a single click.
-            </p>
-            <div class="workflow" aria-label="Workflow comparison">
-              <div>
-                <span data-copy="before">BEFORE</span>
-                <strong data-copy="beforeFlow">Profile → Usage → Limits</strong>
-              </div>
-              <svg aria-hidden="true" viewBox="0 0 64 24">
-                <path d="M2 12h56m-7-7 7 7-7 7"/>
-              </svg>
-              <div class="workflow-now">
-                <span data-copy="now">NOW</span>
-                <strong data-copy="nowFlow">One glance</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="open-source-card">
-        <div class="open-source-glow" aria-hidden="true"></div>
-        <div>
-          <span class="section-kicker">OPEN SOURCE / MIT</span>
-          <h2 data-copy="openTitle">Small tool. Open code.</h2>
-          <p data-copy="openBody">
-            Inspect how it works, report an issue, or shape the next release.
-          </p>
-        </div>
-        <a
-          href="https://github.com/CMMUU/codex-usage-bar"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <span data-copy="openButton">Explore on GitHub</span>
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M5 12h14m-5-5 5 5-5 5"/>
-          </svg>
-        </a>
-      </section>
-    </main>
-
-    <footer>
-      <span>CODEX USAGE BAR</span>
-      <p data-copy="footer">Built to keep creators in flow.</p>
-      <span>© 2026 CMMUU</span>
-    </footer>
-  </body>
+        <div class="size-control"><span>预览尺寸</span><div class="segmented" role="group" aria-label="小组件预览尺寸"><button type="button" data-size-choice="small" aria-pressed="true">小号</button><button type="button" data-size-choice="medium" aria-pressed="false">中号</button></div></div>
+        <small class="widget-illustrative">示例数据</small>
+      </div>
+      <div class="principles"><div><h3>本地优先。</h3><p><span>额度数据保存在你的 Mac 上。</span><span>这个网页，无需登录任何账户。</span></p></div><div><h3>两种订阅，一个入口。</h3><p><span>在 Codex 与 Kimi 之间轻松切换，</span><span>查看你的账户实际提供的额度窗口。</span></p></div></div>
+    </section>
+    <section id="start" class="setup-section" aria-labelledby="setup-title">
+      <h2 id="setup-title"><span>三步之后，</span><span class="accent">一眼就够。</span></h2>
+      <ol class="steps"><li><span class="step-number">01</span><div><h3>安装应用</h3><p>下载通用版 DMG，将应用拖入「应用程序」文件夹。</p></div></li><li><span class="step-number">02</span><div><h3>连接你的订阅</h3><p>先在这台 Mac 上登录 Codex 或 Kimi Code，再在应用中选择对应订阅。</p></div></li><li><span class="step-number">03</span><div><h3>放在顺手的地方</h3><p>留在菜单栏，或在 macOS 14 及以上版本添加桌面小组件。</p></div></li></ol>
+    </section>
+    <section class="faq-section" aria-labelledby="faq-title"><h2 id="faq-title"><span>有些细节，</span><span>你也许想知道。</span></h2><div class="faqs"><details><summary>支持哪些 macOS 版本？<span class="plus" aria-hidden="true"></span></summary><p>菜单栏应用支持 macOS 13 及以上版本，桌面小组件需要 macOS 14 及以上版本。通用安装包同时支持 Apple 与 Intel 芯片。应用可识别 Codex 桌面应用内置的 CLI，也适配了 macOS 27 下的相关查找路径。</p></details><details><summary>这个网页会读取我的额度吗？<span class="plus" aria-hidden="true"></span></summary><p>不会。网页上的数据都是展示用的示例。安装后的应用会使用本机 Codex 登录状态或 Kimi Code 凭据，向对应服务查询额度。不同账户提供的额度窗口可能不同，API Key 账户不一定提供订阅额度。</p></details><details><summary>如何获取更新？<span class="plus" aria-hidden="true"></span></summary><p>在应用中点击「检查更新」，即可通过下载中心获取并验证更新签名。也可以随时从这里下载最新版本。应用约每 5 分钟刷新额度；小组件的刷新时机由 macOS 调度，可能稍有延迟。</p></details></div></section>
+    <section class="closing"><h2>让好想法，继续发生。</h2><a class="button download-link button-blue" href="https://downloads.cmmuu.com/download/codex-usage-bar/latest/macos-universal"><span>下载 macOS 版</span><svg class="icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></a></section>
+  </main>
+  <footer class="site-footer wrap"><div class="footer-brand"><a href="/"><img class="brand-mark " src="/assets/brand-mark.png?v=quota-orbit-20261003" width="48" height="48" alt="">Codex Usage Bar</a><span>由 CMMUU 独立开发</span></div><div class="footer-links"><a href="https://github.com/CMMUU/codex-usage-bar">GitHub</a><a href="https://downloads.cmmuu.com/projects/codex-usage-bar">下载中心</a><span>© 2026 CMMUU</span></div><p class="release-info" aria-live="polite"></p></footer>
+</body>
 </html>
