@@ -1,0 +1,13 @@
+{
+  "Resources\/AppIcon.icns" : "3345406db7572e9f4ac437744e42e6e5bcc107ba73676e47d8c48028eb02e5cf",
+  "Resources\/AppIcon\/AppIcon-1024.png" : "09f97c58d1fd0992a538fad09ecf592a03cf692a45e452d0bd33c2cc77d2294d",
+  "Resources\/Brand\/LogoMaster.png" : "0df824e50c222f8a1fd80a68ec9eac14381045900f83f96a826418110c7eef0c",
+  "Sources\/CodexUsageShared\/Resources\/BrandMark.png" : "3c57baa7286bf38e69d96a2872accd2ab9d721454599ef7defc8a814c38ac918",
+  "web\/public\/assets\/apple-touch-icon.png" : "6cb09c65edb4473023c508adb589b8e18a00c7bace248b5a711a9e7ffd0d5cfb",
+  "web\/public\/assets\/brand-mark.png" : "3c57baa7286bf38e69d96a2872accd2ab9d721454599ef7defc8a814c38ac918",
+  "web\/public\/assets\/favicon.png" : "4dfd331e9776fa3804ce19b5b247eba14fc684fe122ff32328658a9bc3fc4c07",
+  "web\/public\/assets\/favicon.svg" : "dfd01e5f3e2bbd29a4aade593835011c6809e91cd1fcd83dc07f2caace0f0e9d",
+  "web\/public\/assets\/icon-192.png" : "e5f8eeb9e36a3036dc90157d0c795fbbd546699b0fae6c08b19ef06ec493b1a5",
+  "web\/public\/assets\/icon-512.png" : "703dd5714d7525345e9b3ad05e34316ddd3a79002fa8ad613b24199d4502083c",
+  "web\/public\/assets\/og-cover.png" : "0df9d61c2649768de3af26d74b908a2373e4d355835345868fdfdd19661252e3"
+}

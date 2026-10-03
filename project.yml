@@ -9,10 +9,10 @@ options:
 settings:
   base:
     APP_GROUP_IDENTIFIER: group.io.cmmuu.codex-usage-bar
-    CURRENT_PROJECT_VERSION: 12
+    CURRENT_PROJECT_VERSION: 13
     DEVELOPMENT_LANGUAGE: zh_CN
     ENABLE_HARDENED_RUNTIME: YES
-    MARKETING_VERSION: 0.4.3
+    MARKETING_VERSION: 0.4.4
     SWIFT_VERSION: 5.0
 
 packages:
@@ -37,7 +37,8 @@ targets:
     type: library.static
     platform: macOS
     sources:
-      - Sources/CodexUsageShared
+      - path: Sources/CodexUsageShared
+        excludes: [Resources]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.cmmuu.codex-usage-shared
@@ -49,6 +50,8 @@ targets:
     sources:
       - Sources/CodexUsageBar
       - path: Resources/AppIcon.icns
+        buildPhase: resources
+      - path: Sources/CodexUsageShared/Resources/BrandMark.png
         buildPhase: resources
     settings:
       base:
@@ -69,6 +72,10 @@ targets:
     platform: macOS
     sources:
       - Sources/CodexUsageWidget
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+      - path: Sources/CodexUsageShared/Resources/BrandMark.png
+        buildPhase: resources
     settings:
       base:
         APPLICATION_EXTENSION_API_ONLY: YES

@@ -3,8 +3,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Codex Usage Bar"
-VERSION="${VERSION:-0.4.3}"
-BUILD_NUMBER="${BUILD_NUMBER:-12}"
+VERSION="${VERSION:-0.4.4}"
+BUILD_NUMBER="${BUILD_NUMBER:-13}"
 APP_GROUP_IDENTIFIER="${APP_GROUP_IDENTIFIER:-group.io.cmmuu.codex-usage-bar}"
 CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"
 DERIVED_DATA="$ROOT/.build/xcode"
@@ -57,6 +57,12 @@ if [[ ! -d "$SPARKLE_FRAMEWORK" ]]; then
   printf 'Missing embedded Sparkle framework: %s\n' "$SPARKLE_FRAMEWORK" >&2
   exit 1
 fi
+
+# Keep every packaged brand surface byte-identical to the approved exports.
+cmp "$ROOT/Sources/CodexUsageShared/Resources/BrandMark.png" "$APP_DIR/Contents/Resources/BrandMark.png"
+cmp "$ROOT/Sources/CodexUsageShared/Resources/BrandMark.png" "$WIDGET_DIR/Contents/Resources/BrandMark.png"
+cmp "$ROOT/Resources/AppIcon.icns" "$ICON_PATH"
+cmp "$ROOT/Resources/AppIcon.icns" "$WIDGET_DIR/Contents/Resources/AppIcon.icns"
 
 TEMPORARY_ENTITLEMENTS="$(mktemp -d)"
 trap 'rm -rf "$TEMPORARY_ENTITLEMENTS"' EXIT

@@ -25,7 +25,8 @@ let package = Package(
     ),
     .target(
       name: "CodexUsageShared",
-      path: "Sources/CodexUsageShared"
+      path: "Sources/CodexUsageShared",
+      resources: [.process("Resources")]
     ),
     .executableTarget(
       name: "CodexUsageBar",

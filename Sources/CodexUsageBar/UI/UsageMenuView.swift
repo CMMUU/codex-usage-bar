@@ -34,6 +34,8 @@ struct UsageMenuView: View {
 
   private var header: some View {
     HStack {
+      BrandMark()
+        .frame(width: 32, height: 32)
       VStack(alignment: .leading, spacing: 3) {
         Text(viewModel.selectedSubscription.displayName)
           .font(.system(size: 18, weight: .bold, design: .rounded))

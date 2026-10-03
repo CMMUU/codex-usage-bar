@@ -7,7 +7,8 @@ struct MenuBarLabel: View {
 
   var body: some View {
     HStack(spacing: 4) {
-      Image(systemName: "terminal")
+      BrandMark(template: true)
+        .frame(width: 16, height: 16)
       Text(viewModel.menuBarText)
         .monospacedDigit()
     }

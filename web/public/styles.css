@@ -249,25 +249,11 @@ a:focus-visible {
 }
 
 .brand-mark {
-  display: grid;
-  width: 27px;
-  height: 27px;
-  padding: 5px;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 3px;
-  border: 1px solid var(--line-bright);
-  background: rgba(130, 247, 255, 0.05);
-  box-shadow: inset 0 0 18px rgba(130, 247, 255, 0.08);
-}
-
-.brand-mark span {
-  background: var(--cyan);
-  box-shadow: 0 0 8px rgba(130, 247, 255, 0.7);
-}
-
-.brand-mark span:nth-child(2),
-.brand-mark span:nth-child(4) {
-  opacity: 0.2;
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .header-actions {
@@ -596,14 +582,17 @@ h1 span {
   font-size: 11px;
 }
 
-.menu-status svg {
+.menu-brand-mark {
   width: 15px;
   height: 15px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.65;
+  background: currentColor;
+  mask: url("/assets/brand-mark.png?v=quota-orbit-20261003") center / contain no-repeat;
+}
+
+.widget-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .app-preview {

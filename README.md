@@ -1,3 +1,5 @@
+<p align="center"><img src="Resources/AppIcon/AppIcon-1024.png" width="112" height="112" alt="Codex Usage Bar"></p>
+
 # Codex Usage Bar — macOS Codex Usage Monitor & Widgets
 
 > **Stay in flow. Track Codex weekly usage from your Mac menu bar and widgets.**

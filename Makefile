@@ -1,4 +1,7 @@
-.PHONY: build test integration-test widget-build xcode-project package dmg release-package run docs-screenshot public-release-check web-check web-dev web-deploy clean
+.PHONY: brand-assets build test integration-test widget-build xcode-project package dmg release-package run docs-screenshot public-release-check web-check web-dev web-deploy clean
+
+brand-assets:
+	swift Scripts/generate-brand-assets.swift
 
 build:
 	swift build

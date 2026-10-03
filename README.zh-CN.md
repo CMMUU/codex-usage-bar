@@ -1,3 +1,5 @@
+<p align="center"><img src="Resources/AppIcon/AppIcon-1024.png" width="112" height="112" alt="Codex Usage Bar"></p>
+
 # Codex Usage Bar — macOS Codex 用量菜单栏与小组件
 
 > **保持开发心流，从 Mac 菜单栏和小组件随时掌握 Codex 周用量。**

@@ -239,8 +239,10 @@ private struct UsageWidgetView: View {
 
   private var emptyContent: some View {
     VStack(alignment: .leading, spacing: 10) {
-      Label(subscription.displayName, systemImage: "chart.bar.fill")
-        .font(.headline)
+      HStack(spacing: 6) {
+        BrandMark().frame(width: 18, height: 18)
+        Text(subscription.displayName).font(.headline)
+      }
 
       Spacer()
 
@@ -258,6 +260,7 @@ private struct UsageWidgetView: View {
     _ snapshot: SharedUsageSnapshot
   ) -> some View {
     HStack(spacing: 6) {
+      BrandMark().frame(width: 18, height: 18)
       Text(subscription.displayName)
         .font(.headline)
       Spacer(minLength: 4)
