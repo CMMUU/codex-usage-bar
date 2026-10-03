@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, access } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { renderPage } from '../src/render-page.mjs';
 import { locales, DOWNLOAD, ORIGIN } from '../src/content.mjs';
@@ -47,5 +47,17 @@ test('font payloads match their declared WOFF2 format', async () => {
   for (const family of ['instrument-serif', 'instrument-serif-italic', 'manrope', 'noto-serif-sc']) {
     const bytes = await readFile(new URL(`../public/assets/fonts/${family}.woff2`, import.meta.url));
     assert.equal(bytes.subarray(0, 4).toString(), 'wOF2', family);
+  }
+});
+
+test('all same-origin page links, icons, and script assets exist in the deploy bundle', async () => {
+  const publicRoot = new URL('../public/', import.meta.url);
+  for (const locale of Object.keys(locales)) {
+    const { html } = renderPage(locale);
+    const paths = new Set([...html.matchAll(/(?:href|src)="(\/[^"?]*)(?:\?[^" ]*)?"/g)].map(m => m[1]));
+    for (const path of paths) {
+      const file = path.endsWith('/') ? path + 'index.html' : path;
+      await assert.doesNotReject(access(new URL('.' + file, publicRoot)), `${locale}: ${path}`);
+    }
   }
 });

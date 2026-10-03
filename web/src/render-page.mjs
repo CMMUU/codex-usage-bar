@@ -45,8 +45,8 @@ export function renderPage(locale) {
   <meta property="og:locale:alternate" content="${locale === 'en' ? 'zh_CN' : 'en_US'}">
   <meta property="og:image" content="${ORIGIN}/assets/icon-512.png?v=quota-orbit-20261003">
   <meta name="twitter:card" content="summary">
-  <link rel="icon" href="/favicon.svg?v=quota-orbit-20261003" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=quota-orbit-20261003">
+  <link rel="icon" href="/assets/favicon.svg?v=quota-orbit-20261003" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=quota-orbit-20261003">
   <link rel="manifest" href="${t.path}manifest.webmanifest">
   <link rel="preload" href="/assets/fonts/${locale === 'en' ? 'instrument-serif' : 'noto-serif-sc'}.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
