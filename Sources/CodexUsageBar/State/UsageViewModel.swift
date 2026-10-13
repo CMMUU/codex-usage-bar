@@ -81,10 +81,7 @@ final class UsageViewModel: ObservableObject {
   }
 
   var menuBarText: String {
-    var name = selectedSubscription.displayName
-    if selectedSubscription == .kimi, snapshot != nil {
-      name += " " + primaryQuotaKind.shortTitle(in: displayLanguage)
-    }
+    let name = selectedSubscription.displayName
     if let snapshot {
       return "\(name) \(Int(snapshot.usedPercent.rounded()))%"
     }
