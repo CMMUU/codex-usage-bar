@@ -30,6 +30,6 @@ if [[ "$TARGET" == *.app ]]; then
   UPLOAD="$TEMP_DIR/application.zip"
   ditto -c -k --sequesterRsrc --keepParent "$TARGET" "$UPLOAD"
 fi
-xcrun notarytool submit "$UPLOAD" "${AUTH_ARGUMENTS[@]}" --wait --timeout 20m
+xcrun notarytool submit "$UPLOAD" "${AUTH_ARGUMENTS[@]}" --no-s3-acceleration --wait --timeout 20m
 xcrun stapler staple "$TARGET"
 xcrun stapler validate "$TARGET"
