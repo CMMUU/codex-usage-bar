@@ -1,3 +1,4 @@
+import AppKit
 import CodexUsageShared
 import SwiftUI
 
@@ -23,7 +24,7 @@ struct CodexUsageBarApp: App {
       wrappedValue: UpdateManager(
         startingUpdater: !isDocumentationSnapshot,
         previewStatus: isDocumentationSnapshot
-          ? .available(version: "0.4.5")
+          ? .available(version: "0.4.6")
           : nil
       )
     )
@@ -62,6 +63,16 @@ struct CodexUsageBarApp: App {
         } else {
           await viewModel.activate()
         }
+      }
+      .onReceive(
+        NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)
+      ) { _ in
+        viewModel.requestWidgetReload(reason: "background")
+      }
+      .onReceive(
+        NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
+      ) { _ in
+        Task { await viewModel.resumeAfterWake() }
       }
     }
     .menuBarExtraStyle(.window)

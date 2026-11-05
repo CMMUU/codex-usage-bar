@@ -16,6 +16,7 @@ final class UsageViewModel: ObservableObject {
   @Published private(set) var selectedSubscription: UsageSubscription
   @Published private(set) var displayLanguage: AppLanguage
   @Published private(set) var isLanguageSwitching = false
+  @Published private(set) var widgetSyncFailed = false
 
   private let client: CodexAppServerClient
   private let kimiClient: KimiUsageClient
@@ -24,6 +25,9 @@ final class UsageViewModel: ObservableObject {
   private let sharedWidgetPreferencesStore: SharedWidgetPreferencesStore
   private let localUsageServer: LocalUsageSnapshotServer
   private let languageDefaults: UserDefaults
+  private let appCacheStore = SharedWidgetStateStore(
+    directoryURL: SharedUsageConfiguration.appCacheDirectory)
+  private var lastPublishedWidgetState: SharedWidgetState?
   private var languageTransition: LanguageTransitionState
   private var activated = false
   private var refreshLoop: Task<Void, Never>?
@@ -231,7 +235,8 @@ final class UsageViewModel: ObservableObject {
   }
 
   private func restoreCachedSnapshot() {
-    let state = sharedWidgetStateStore.load()
+    let state = WidgetSnapshotResolver.resolve(
+      live: nil, shared: sharedWidgetStateStore.load(), cached: appCacheStore.load())
     let storedSnapshot = state == nil ? sharedUsageStore.load() : state?.snapshot
     guard let cached = storedSnapshot,
       UsageSubscription.resolve(cached.subscriptionID) == selectedSubscription
@@ -340,6 +345,7 @@ final class UsageViewModel: ObservableObject {
 
   private func persistWidgetPreferences() {
     languageDefaults.set(selectedSubscription.rawValue, forKey: UsageSubscription.storageKey)
+    guard SharedUsageConfiguration.sharedStorageEnabled() else { return }
     do {
       try sharedWidgetPreferencesStore.save(
         SharedWidgetPreferences(
@@ -348,7 +354,7 @@ final class UsageViewModel: ObservableObject {
         )
       )
     } catch {
-      fputs("Widget preferences update failed: \(error)\n", stderr)
+      WidgetSyncDiagnostics.failure("write-preferences", error: error)
     }
   }
 
@@ -389,18 +395,46 @@ final class UsageViewModel: ObservableObject {
     )
     localUsageServer.publish(state)
     do {
-      try sharedWidgetStateStore.save(state)
-      // Keep on-disk compatibility while an older extension is still loaded.
-      if let snapshot = state.snapshot {
-        try sharedUsageStore.save(snapshot)
-      } else {
-        try sharedUsageStore.clear()
-      }
+      try appCacheStore.save(state)
     } catch {
-      fputs("Widget state update failed: \(error)\n", stderr)
+      WidgetSyncDiagnostics.failure("write-app-cache", error: error)
     }
+    var shared = false
+    do {
+      if SharedUsageConfiguration.sharedStorageEnabled() {
+        try sharedWidgetStateStore.save(state)
+        shared = true
+        // Keep on-disk compatibility while an older extension is still loaded.
+        if let snapshot = state.snapshot {
+          try sharedUsageStore.save(snapshot)
+        } else {
+          try sharedUsageStore.clear()
+        }
+      }
+      widgetSyncFailed = false
+    } catch {
+      widgetSyncFailed = true
+      WidgetSyncDiagnostics.failure("publish-shared-state", error: error)
+    }
+    WidgetSyncDiagnostics.published(state, shared: shared)
+    let previous = lastPublishedWidgetState
+    lastPublishedWidgetState = state
+    if previous?.snapshot != state.snapshot || previous?.languageCode != state.languageCode
+      || previous?.subscriptionID != state.subscriptionID
+    {
+      requestWidgetReload(reason: "state-changed")
+    }
+  }
+
+  func requestWidgetReload(reason: String) {
+    WidgetSyncDiagnostics.reload(reason: reason)
     WidgetCenter.shared.reloadTimelines(
       ofKind: SharedUsageConfiguration.widgetKind
     )
+  }
+
+  func resumeAfterWake() async {
+    await refreshIfStale()
+    requestWidgetReload(reason: "wake")
   }
 }

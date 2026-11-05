@@ -8,11 +8,11 @@ options:
 
 settings:
   base:
-    APP_GROUP_IDENTIFIER: group.io.cmmuu.codex-usage-bar
-    CURRENT_PROJECT_VERSION: 14
+    APP_GROUP_IDENTIFIER: $(DEVELOPMENT_TEAM).io.cmmuu.codex-usage-bar
+    CURRENT_PROJECT_VERSION: 15
     DEVELOPMENT_LANGUAGE: zh_CN
     ENABLE_HARDENED_RUNTIME: YES
-    MARKETING_VERSION: 0.4.5
+    MARKETING_VERSION: 0.4.6
     SWIFT_VERSION: 5.0
 
 packages:

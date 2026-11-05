@@ -65,12 +65,11 @@ private struct UsageTimelineProvider: TimelineProvider {
   ) {
     loadSnapshot { snapshot, languageCode, subscriptionID in
       let now = Date()
-      let entry = UsageTimelineEntry(
-        date: now,
-        snapshot: snapshot,
-        languageCode: languageCode,
-        subscriptionID: subscriptionID
-      )
+      let entries = WidgetTimelineSchedule.entryDates(updatedAt: snapshot?.updatedAt, now: now).map
+      {
+        UsageTimelineEntry(
+          date: $0, snapshot: snapshot, languageCode: languageCode, subscriptionID: subscriptionID)
+      }
       let routineRefresh = now.addingTimeInterval(SharedUsageConfiguration.refreshInterval)
       let refreshDate =
         snapshot?.displayQuotas.compactMap(\.resetsAt).min().map {
@@ -78,7 +77,7 @@ private struct UsageTimelineProvider: TimelineProvider {
         } ?? routineRefresh
 
       completion(
-        Timeline(entries: [entry], policy: .after(refreshDate))
+        Timeline(entries: entries, policy: .after(refreshDate))
       )
     }
   }
@@ -89,18 +88,25 @@ private struct UsageTimelineProvider: TimelineProvider {
     // Always consult the running app. A readable App Group file can still be
     // stale when the app has lost permission to write that container.
     localClient.loadPayload { live in
-      let shared =
-        appGroupStateStore.load()
-        ?? legacyState(
-          snapshot: appGroupStore.load(), preferences: appGroupPreferencesStore.load()
-        )
-      let cached =
-        widgetStateCacheStore.load()
-        ?? legacyState(
-          snapshot: widgetCacheStore.load(), preferences: widgetPreferencesCacheStore.load()
-        )
-      let state = WidgetSnapshotResolver.resolve(live: live, shared: shared, cached: cached)
-      if let state { try? widgetStateCacheStore.save(state) }
+      let selection = WidgetSnapshotResolver.select(
+        live: live,
+        shared: {
+          appGroupStateStore.load()
+            ?? legacyState(
+              snapshot: appGroupStore.load(), preferences: appGroupPreferencesStore.load())
+        },
+        cached: {
+          widgetStateCacheStore.load()
+            ?? legacyState(
+              snapshot: widgetCacheStore.load(), preferences: widgetPreferencesCacheStore.load())
+        })
+      let state = selection.state
+      if let state {
+        do { try widgetStateCacheStore.save(state) } catch {
+          WidgetSyncDiagnostics.failure("write-widget-cache", error: error)
+        }
+      }
+      WidgetSyncDiagnostics.received(selection)
       completion(state?.snapshot, state?.languageCode, state?.subscriptionID)
     }
   }
@@ -115,15 +121,7 @@ private struct UsageTimelineProvider: TimelineProvider {
     )
   }
 
-  private static let widgetCacheDirectory =
-    FileManager.default.urls(
-      for: .applicationSupportDirectory,
-      in: .userDomainMask
-    )[0]
-    .appendingPathComponent(
-      "CodexUsageWidget",
-      isDirectory: true
-    )
+  private static let widgetCacheDirectory = SharedUsageConfiguration.widgetCacheDirectory
 }
 
 private struct UsageWidgetView: View {
@@ -164,13 +162,13 @@ private struct UsageWidgetView: View {
   private func smallContent(
     _ snapshot: SharedUsageSnapshot
   ) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: 6) {
       header(snapshot)
 
       Spacer(minLength: 0)
 
       HStack(alignment: .center, spacing: 12) {
-        usageRing(snapshot)
+        usageRing(snapshot, diameter: 64)
 
         VStack(alignment: .leading, spacing: 4) {
           Text(snapshot.primaryQuota.kind.shortTitle(in: language))
@@ -188,9 +186,15 @@ private struct UsageWidgetView: View {
 
       Spacer(minLength: 0)
 
-      resetText(snapshot)
+      VStack(alignment: .leading, spacing: 2) {
+        resetText(snapshot)
+        Text(updatedText(snapshot))
+          .font(.system(size: 9))
+          .foregroundStyle(snapshot.isStale(relativeTo: entry.date) ? .orange : .secondary)
+          .lineLimit(1)
+      }
     }
-    .padding(14)
+    .padding(12)
   }
 
   private func mediumContent(
@@ -264,7 +268,7 @@ private struct UsageWidgetView: View {
       Text(subscription.displayName)
         .font(.headline)
       Spacer(minLength: 4)
-      if snapshot.isStale() {
+      if snapshot.isStale(relativeTo: entry.date) {
         Image(systemName: "clock.badge.exclamationmark")
           .foregroundStyle(.orange)
           .help(language.widgetStaleHelp)
@@ -278,7 +282,8 @@ private struct UsageWidgetView: View {
   }
 
   private func usageRing(
-    _ snapshot: SharedUsageSnapshot
+    _ snapshot: SharedUsageSnapshot,
+    diameter: CGFloat = 82
   ) -> some View {
     ZStack {
       Circle()
@@ -299,7 +304,7 @@ private struct UsageWidgetView: View {
           .foregroundStyle(.secondary)
       }
     }
-    .frame(width: 82, height: 82)
+    .frame(width: diameter, height: diameter)
     .accessibilityLabel(snapshot.primaryQuota.kind.title(in: language, for: subscription))
     .accessibilityValue(percentText(snapshot.usedPercent))
   }
@@ -349,7 +354,8 @@ private struct UsageWidgetView: View {
   ) -> String {
     language.widgetUpdatedText(
       snapshot.updatedAt,
-      isStale: snapshot.isStale()
+      isStale: snapshot.isStale(relativeTo: entry.date),
+      relativeTo: entry.date
     )
   }
 }
@@ -395,9 +401,9 @@ extension SharedUsageSnapshot {
 }
 
 struct CodexUsageWidget: Widget {
-  private let language = AppLanguage.resolve(
-    SharedWidgetPreferencesStore().load()?.languageCode
-  )
+  // Configuration metadata must not read a container before the live provider
+  // runs. The actual widget language comes from its atomic timeline entry.
+  private let language = AppLanguage.systemDefault
 
   var body: some WidgetConfiguration {
     StaticConfiguration(

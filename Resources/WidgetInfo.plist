@@ -24,6 +24,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CodexUsageAppGroupIdentifier</key>
 	<string>$(APP_GROUP_IDENTIFIER)</string>
+	<key>CodexUsageSharedStorageEnabled</key>
+	<false/>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>NSExtension</key>

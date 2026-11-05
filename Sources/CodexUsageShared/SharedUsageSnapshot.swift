@@ -73,7 +73,7 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
 
   public func isStale(
     relativeTo date: Date = Date(),
-    maxAge: TimeInterval = 15 * 60
+    maxAge: TimeInterval = SharedUsageConfiguration.staleInterval
   ) -> Bool {
     date.timeIntervalSince(updatedAt) > maxAge
   }
@@ -81,9 +81,28 @@ public struct SharedUsageSnapshot: Codable, Equatable, Sendable {
 
 public enum SharedUsageConfiguration {
   public static let refreshInterval: TimeInterval = 5 * 60
+  public static let staleInterval: TimeInterval = 15 * 60
   public static let widgetKind = "io.cmmuu.codex-usage-bar.usage-widget"
   public static let fallbackAppGroupIdentifier =
     "group.io.cmmuu.codex-usage-bar"
+
+  // Development/SwiftPM builds must never claim an unauthorised App Group.
+  // The packaging script enables this only after selecting a Developer ID team.
+  public static func sharedStorageEnabled(bundle: Bundle = .main) -> Bool {
+    bundle.object(forInfoDictionaryKey: "CodexUsageSharedStorageEnabled") as? Bool == true
+  }
+
+  public static var widgetCacheDirectory: URL {
+    applicationSupportDirectory.appendingPathComponent("CodexUsageWidget", isDirectory: true)
+  }
+
+  public static var appCacheDirectory: URL {
+    applicationSupportDirectory.appendingPathComponent("CodexUsageBar", isDirectory: true)
+  }
+
+  private static var applicationSupportDirectory: URL {
+    FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+  }
 
   public static func appGroupIdentifier(
     bundle: Bundle = .main

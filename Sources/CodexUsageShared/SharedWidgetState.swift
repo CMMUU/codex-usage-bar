@@ -53,14 +53,36 @@ public enum WidgetSnapshotResolver {
     shared: SharedWidgetState?,
     cached: SharedWidgetState?
   ) -> SharedWidgetState? {
-    // The running app is authoritative, including a subscription with no data.
-    if let live { return live.normalized }
-    let candidates = [shared, cached].compactMap { $0 }
-    return candidates.max {
-      ($0.publishedAt ?? $0.snapshot?.updatedAt ?? .distantPast)
-        < ($1.publishedAt ?? $1.snapshot?.updatedAt ?? .distantPast)
-    }?.normalized
+    select(live: live, shared: { shared }, cached: { cached }).state
   }
+
+  /// Lazy fallbacks are essential: even reading an unauthorised container can
+  /// invalidate a widget extension before it delivers its live timeline.
+  public static func select(
+    live: SharedWidgetState?,
+    shared: () -> SharedWidgetState?,
+    cached: () -> SharedWidgetState?
+  ) -> WidgetStateSelection {
+    if let live { return WidgetStateSelection(state: live.normalized, source: .live) }
+    let sharedState = shared()
+    let cachedState = cached()
+    let sharedDate = sharedState?.publishedAt ?? sharedState?.snapshot?.updatedAt ?? .distantPast
+    let cachedDate = cachedState?.publishedAt ?? cachedState?.snapshot?.updatedAt ?? .distantPast
+    if let sharedState, cachedState == nil || sharedDate >= cachedDate {
+      return WidgetStateSelection(state: sharedState.normalized, source: .shared)
+    }
+    return WidgetStateSelection(
+      state: cachedState?.normalized, source: cachedState == nil ? .unavailable : .cached)
+  }
+}
+
+public enum WidgetStateSource: String, Sendable {
+  case live, shared, cached, unavailable
+}
+
+public struct WidgetStateSelection: Sendable {
+  public let state: SharedWidgetState?
+  public let source: WidgetStateSource
 }
 
 public struct SharedWidgetStateStore {
@@ -68,12 +90,15 @@ public struct SharedWidgetStateStore {
   private let appGroupIdentifier: String?
 
   public init(
-    appGroupIdentifier: String = SharedUsageConfiguration.appGroupIdentifier()
+    appGroupIdentifier: String = SharedUsageConfiguration.appGroupIdentifier(),
+    enabled: Bool = SharedUsageConfiguration.sharedStorageEnabled()
   ) {
     self.appGroupIdentifier = appGroupIdentifier
-    fileURL = FileManager.default.containerURL(
-      forSecurityApplicationGroupIdentifier: appGroupIdentifier
-    )?.appendingPathComponent("widget-state.json")
+    fileURL =
+      enabled
+      ? FileManager.default.containerURL(
+        forSecurityApplicationGroupIdentifier: appGroupIdentifier
+      )?.appendingPathComponent("widget-state.json") : nil
   }
 
   public init(directoryURL: URL) {
@@ -82,8 +107,23 @@ public struct SharedWidgetStateStore {
   }
 
   public func load() -> SharedWidgetState? {
-    guard let fileURL, let data = try? Data(contentsOf: fileURL) else { return nil }
-    return (try? JSONDecoder().decode(SharedWidgetState.self, from: data))?.normalized
+    do {
+      return try loadIfPresent()
+    } catch {
+      WidgetSyncDiagnostics.failure("read-state", error: error)
+      return nil
+    }
+  }
+
+  public func loadIfPresent() throws -> SharedWidgetState? {
+    guard let fileURL else { return nil }
+    let data: Data
+    do {
+      data = try Data(contentsOf: fileURL)
+    } catch CocoaError.fileReadNoSuchFile {
+      return nil
+    }
+    return try JSONDecoder().decode(SharedWidgetState.self, from: data).normalized
   }
 
   public func save(_ state: SharedWidgetState) throws {

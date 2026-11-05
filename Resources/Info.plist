@@ -34,6 +34,8 @@
 	<true/>
 	<key>CodexUsageAppGroupIdentifier</key>
 	<string>$(APP_GROUP_IDENTIFIER)</string>
+	<key>CodexUsageSharedStorageEnabled</key>
+	<false/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSSupportsAutomaticTermination</key>

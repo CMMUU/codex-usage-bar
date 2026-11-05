@@ -50,7 +50,10 @@ jobs:
         env:
           VERSION: 0.2.2
           BUILD_NUMBER: ${{ github.run_number }}
-        run: make release-package
+        run: |
+          make dmg
+          cd dist
+          shasum -a 256 Codex-Usage-Bar-v0.2.2-universal.dmg > Codex-Usage-Bar-v0.2.2-universal.dmg.sha256
 
       - name: Verify app, widget, DMG, metadata, and signatures
         run: |

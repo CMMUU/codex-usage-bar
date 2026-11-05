@@ -18,6 +18,13 @@ struct UsageMenuView: View {
         errorPanel(errorMessage)
       }
 
+      if viewModel.widgetSyncFailed {
+        Text(language.widgetSyncFailureText)
+          .font(.caption)
+          .foregroundStyle(.orange)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+
       Divider()
       detailsSection
       Divider()

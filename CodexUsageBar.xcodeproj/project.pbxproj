@@ -24,7 +24,9 @@
 		5207762E1C66FF0C8B645971 /* CodexExecutableLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9854879767FA111E08BD03 /* CodexExecutableLocator.swift */; };
 		551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */; };
 		5F3991E2CD5C5F5C27CAC822 /* SharedWidgetState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93ADD4F68098BB10D3475725 /* SharedWidgetState.swift */; };
+		873A7669A94B07E2D701BFAB /* WidgetTimelineSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04F953A87F2D3BDA10B3C321 /* WidgetTimelineSchedule.swift */; };
 		9F673B2D4A996BC58DDE8351 /* libCodexUsageShared.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 464C371BD43D481345921981 /* libCodexUsageShared.a */; };
+		A111EB827FA9DB364CFBAEC0 /* WidgetSyncDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7101EA6CE330B931D7C02F49 /* WidgetSyncDiagnostics.swift */; };
 		AF97574E9DF7F760F1AF0DBF /* UsageMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966E4F72C09CBA6C5B7D1914 /* UsageMenuView.swift */; };
 		B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30702127D771354F007969A4 /* WidgetLanguage.swift */; };
 		BED3C5D8D31711DBE430DB42 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F7F79DBC97C363AAAB5DFB9 /* AppLanguage.swift */; };
@@ -91,6 +93,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		04F953A87F2D3BDA10B3C321 /* WidgetTimelineSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetTimelineSchedule.swift; sourceTree = "<group>"; };
 		0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUsageSnapshot.swift; sourceTree = "<group>"; };
 		1BB5FDEC776BDE5706254458 /* BrandMark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = BrandMark.png; sourceTree = "<group>"; };
 		20D933D7A66C1DE9781DE30C /* BrandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandMark.swift; sourceTree = "<group>"; };
@@ -103,6 +106,7 @@
 		464C371BD43D481345921981 /* libCodexUsageShared.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCodexUsageShared.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		57ECB92954168A746830981F /* DocumentationSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentationSnapshot.swift; sourceTree = "<group>"; };
 		5964387CC7B9C1338680606C /* UsageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageViewModel.swift; sourceTree = "<group>"; };
+		7101EA6CE330B931D7C02F49 /* WidgetSyncDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSyncDiagnostics.swift; sourceTree = "<group>"; };
 		715B1A9DFACEDD913D307D75 /* MenuBarLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabel.swift; sourceTree = "<group>"; };
 		7FCE3BE4C8AEFD6DBBEDDE34 /* CodexUsageBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageBarApp.swift; sourceTree = "<group>"; };
 		93ADD4F68098BB10D3475725 /* SharedWidgetState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedWidgetState.swift; sourceTree = "<group>"; };
@@ -231,6 +235,8 @@
 				ACEEC35E53E284E6B52F1D68 /* UsageQuotaWindow.swift */,
 				CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */,
 				30702127D771354F007969A4 /* WidgetLanguage.swift */,
+				7101EA6CE330B931D7C02F49 /* WidgetSyncDiagnostics.swift */,
+				04F953A87F2D3BDA10B3C321 /* WidgetTimelineSchedule.swift */,
 			);
 			name = CodexUsageShared;
 			path = Sources/CodexUsageShared;
@@ -462,6 +468,8 @@
 				C626285519829C12906F997B /* UsageQuotaWindow.swift in Sources */,
 				F5DA4D7C405913D0324BA5BB /* UsageSubscription.swift in Sources */,
 				B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */,
+				A111EB827FA9DB364CFBAEC0 /* WidgetSyncDiagnostics.swift in Sources */,
+				873A7669A94B07E2D701BFAB /* WidgetTimelineSchedule.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -557,7 +565,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APP_GROUP_IDENTIFIER = "group.io.cmmuu.codex-usage-bar";
+				APP_GROUP_IDENTIFIER = "$(DEVELOPMENT_TEAM).io.cmmuu.codex-usage-bar";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -588,7 +596,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -609,7 +617,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.4.5;
+				MARKETING_VERSION = 0.4.6;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -756,7 +764,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APP_GROUP_IDENTIFIER = "group.io.cmmuu.codex-usage-bar";
+				APP_GROUP_IDENTIFIER = "$(DEVELOPMENT_TEAM).io.cmmuu.codex-usage-bar";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -787,7 +795,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -802,7 +810,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.4.5;
+				MARKETING_VERSION = 0.4.6;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -25,6 +25,7 @@ jobs:
       APPLE_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_BASE64 }}
       APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      EXPECTED_APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
       APPLE_NOTARY_KEY_BASE64: ${{ secrets.APPLE_NOTARY_KEY_BASE64 }}
       APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
       APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
@@ -57,6 +58,16 @@ jobs:
       - name: Resolve signing mode
         id: signing
         run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          # A locally signed and notarized installer may be prepared as a draft.
+          # Only public artifacts are transferred; Apple private keys stay local.
+          if [[ "$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null || true)" == true ]]; then
+            test -n "$EXPECTED_APPLE_TEAM_ID"
+            echo "mode=prepared" >>"$GITHUB_OUTPUT"
+            echo "SIGNING_MODE=developer-id" >>"$GITHUB_ENV"
+            echo "APPLE_TEAM_ID=$EXPECTED_APPLE_TEAM_ID" >>"$GITHUB_ENV"
+            exit 0
+          fi
           required=(
             APPLE_DEVELOPER_ID_CERTIFICATE_BASE64
             APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD
@@ -72,18 +83,13 @@ jobs:
             fi
           done
 
-          if [[ "$configured" -eq 0 ]]; then
-            echo "mode=adhoc" >>"$GITHUB_OUTPUT"
-            echo "SIGNING_MODE=adhoc" >>"$GITHUB_ENV"
-            echo "CODE_SIGN_IDENTITY=-" >>"$GITHUB_ENV"
-            echo "Publishing an ad-hoc signed release."
-          elif [[ "$configured" -eq "${#required[@]}" ]]; then
+          if [[ "$configured" -eq "${#required[@]}" ]]; then
             echo "mode=developer-id" >>"$GITHUB_OUTPUT"
             echo "SIGNING_MODE=developer-id" >>"$GITHUB_ENV"
             echo "Publishing a Developer ID signed and notarized release."
           else
-            echo "Apple release credentials are only partially configured." >&2
-            echo "Configure all six Apple secrets, or remove all of them for an ad-hoc release." >&2
+            echo "Official releases require Developer ID signing and notarization." >&2
+            echo "Configure all six Apple secrets, or prepare a locally signed draft installer." >&2
             for name in "${required[@]}"; do
               if [[ -z "${!name:-}" ]]; then
                 echo "Missing GitHub Actions secret: $name" >&2
@@ -131,10 +137,29 @@ jobs:
             >>"$GITHUB_ENV"
 
       - name: Build and package DMG
+        if: steps.signing.outputs.mode == 'developer-id'
         env:
           VERSION: ${{ steps.release.outputs.version }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: make release-package
+
+      - name: Load locally signed and notarized draft installer
+        if: steps.signing.outputs.mode == 'prepared'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          mkdir -p dist
+          DMG_NAME="Codex-Usage-Bar-v$VERSION-universal.dmg"
+          gh release download "$TAG" --dir dist --pattern "$DMG_NAME" --pattern "$DMG_NAME.sha256"
+          (cd dist && shasum -a 256 -c "$DMG_NAME.sha256")
+          codesign --verify --verbose=2 "dist/$DMG_NAME"
+          xcrun stapler validate "dist/$DMG_NAME"
+          MOUNT_DIR="$(mktemp -d)"
+          trap 'hdiutil detach "$MOUNT_DIR" >/dev/null 2>&1 || true; rmdir "$MOUNT_DIR" 2>/dev/null || true' EXIT
+          hdiutil attach "dist/$DMG_NAME" -readonly -nobrowse -mountpoint "$MOUNT_DIR"
+          ditto "$MOUNT_DIR/Codex Usage Bar.app" "dist/Codex Usage Bar.app"
+          python3 Scripts/verify_signing.py --app "dist/Codex Usage Bar.app" --team "$APPLE_TEAM_ID" --version "$VERSION" --notarized
 
       - name: Verify release artifacts
         env:
@@ -173,13 +198,9 @@ jobs:
               "$APP/Contents/Info.plist"
           )" = "true"
 
-          if [[ "$SIGNING_MODE" == "developer-id" ]]; then
-            codesign --verify --verbose=2 "$DMG"
-            xcrun stapler validate "$DMG"
-            spctl --assess --type execute --verbose=2 "$APP"
-          else
-            codesign -dvv "$APP" 2>&1 | grep -q "Signature=adhoc"
-          fi
+          python3 Scripts/verify_signing.py --app "$APP" --team "$APPLE_TEAM_ID" --version "$VERSION" --notarized
+          codesign --verify --verbose=2 "$DMG"
+          xcrun stapler validate "$DMG"
 
       - name: Generate signed Sparkle appcast
         env:
@@ -210,13 +231,18 @@ jobs:
           NOTES="docs/release-notes/$TAG.md"
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "This version is already published; preserve its signed bytes and use a new version." >&2
-            exit 1
+            if [[ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" != true ]]; then
+              echo "This version is already published; preserve its signed bytes and use a new version." >&2
+              exit 1
+            fi
+            gh release upload "$TAG" "$APPCAST" "$CENTER_APPCAST"
+            gh release edit "$TAG" --draft=false --latest --title "Codex Usage Bar $TAG" --notes-file "$NOTES"
+          else
+            gh release create "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" "$CENTER_APPCAST" \
+              --title "Codex Usage Bar $TAG" \
+              --notes-file "$NOTES" \
+              --latest
           fi
-          gh release create "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" "$CENTER_APPCAST" \
-            --title "Codex Usage Bar $TAG" \
-            --notes-file "$NOTES" \
-            --latest
 
       - name: Verify download center publication
         env:

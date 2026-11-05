@@ -18,6 +18,45 @@ enum WidgetSyncVerifier {
     let current = SharedWidgetState(
       snapshot: snapshot, languageCode: "zh-Hans", publishedAt: now
     )
+    var fallbackReads = 0
+    let liveSelection = WidgetSnapshotResolver.select(
+      live: current,
+      shared: {
+        fallbackReads += 1
+        return old
+      },
+      cached: {
+        fallbackReads += 1
+        return old
+      })
+    try check(
+      liveSelection.state == current && liveSelection.source == .live && fallbackReads == 0,
+      "实时数据可用时不触碰共享目录或旧缓存")
+    let emptyLive = SharedWidgetState(
+      snapshot: nil, languageCode: "en", subscriptionID: "kimi", publishedAt: now)
+    let emptySelection = WidgetSnapshotResolver.select(
+      live: emptyLive,
+      shared: {
+        fallbackReads += 1
+        return old
+      }, cached: { old })
+    try check(
+      emptySelection.state == emptyLive && fallbackReads == 0,
+      "实时空状态也立即返回，不触发受限共享读取")
+    let cacheSelection = WidgetSnapshotResolver.select(
+      live: nil, shared: { nil }, cached: { current })
+    try check(
+      cacheSelection.source == .cached && cacheSelection.state == current,
+      "回环和共享存储不可用时明确标记私有缓存来源")
+    let disabledStore = SharedWidgetStateStore(appGroupIdentifier: "invalid.test", enabled: false)
+    try check(disabledStore.load() == nil, "开发构建禁用未授权 App Group")
+    let dates = WidgetTimelineSchedule.entryDates(updatedAt: now, now: now)
+    try check(
+      dates.count == 2 && snapshot.isStale(relativeTo: dates[1]),
+      "预生成过期时间线，系统延迟刷新时也不会长期显示新鲜状态")
+    try check(
+      WidgetTimelineSchedule.entryDates(updatedAt: oldSnapshot.updatedAt, now: now) == [now],
+      "旧额度直接显示过期，不为旧缓存延后刷新状态")
     try check(
       WidgetSnapshotResolver.resolve(live: current, shared: old, cached: old) == current,
       "实时额度优先于可读取的旧 App Group 和 Widget 缓存"

@@ -3,10 +3,26 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Codex Usage Bar"
-VERSION="${VERSION:-0.4.5}"
-BUILD_NUMBER="${BUILD_NUMBER:-14}"
-APP_GROUP_IDENTIFIER="${APP_GROUP_IDENTIFIER:-group.io.cmmuu.codex-usage-bar}"
+VERSION="${VERSION:-0.4.6}"
+BUILD_NUMBER="${BUILD_NUMBER:-15}"
 CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"
+SIGNING_MODE="${SIGNING_MODE:-development}"
+SHARED_STORAGE_ENABLED=false
+APP_GROUP_IDENTIFIER="${APP_GROUP_IDENTIFIER:-}"
+if [[ "$CODE_SIGN_IDENTITY" != "-" ]]; then
+  : "${APPLE_TEAM_ID:?Developer ID packaging requires APPLE_TEAM_ID}"
+  APP_GROUP_IDENTIFIER="${APP_GROUP_IDENTIFIER:-$APPLE_TEAM_ID.io.cmmuu.codex-usage-bar}"
+  if [[ ! "$APPLE_TEAM_ID" =~ ^[A-Z0-9]{10}$ ]] || [[ "$APP_GROUP_IDENTIFIER" != "$APPLE_TEAM_ID.io.cmmuu.codex-usage-bar" ]]; then
+    printf 'Expected a Team ID-prefixed macOS App Group for the signing team.\n' >&2
+    exit 1
+  fi
+  SHARED_STORAGE_ENABLED=true
+elif [[ "$SIGNING_MODE" != "development" ]]; then
+  printf 'Release packaging requires Developer ID signing; ad-hoc fallback is disabled.\n' >&2
+  exit 1
+else
+  APP_GROUP_IDENTIFIER="development.io.cmmuu.codex-usage-bar"
+fi
 DERIVED_DATA="$ROOT/.build/xcode"
 APP_SOURCE="$DERIVED_DATA/Build/Products/Release/$APP_NAME.app"
 APP_DIR="$ROOT/dist/$APP_NAME.app"
@@ -45,6 +61,10 @@ xcodebuild \
 
 ditto "$APP_SOURCE" "$APP_DIR"
 
+for BUNDLE_INFO in "$APP_DIR/Contents/Info.plist" "$WIDGET_DIR/Contents/Info.plist"; do
+  /usr/libexec/PlistBuddy -c "Set :CodexUsageSharedStorageEnabled $SHARED_STORAGE_ENABLED" "$BUNDLE_INFO"
+done
+
 if [[ ! -d "$WIDGET_DIR" ]]; then
   printf 'Missing embedded WidgetKit extension: %s\n' "$WIDGET_DIR" >&2
   exit 1
@@ -74,12 +94,13 @@ cp \
   "$ROOT/Resources/CodexUsageWidget.entitlements" \
   "$TEMPORARY_ENTITLEMENTS/widget.entitlements"
 
-/usr/libexec/PlistBuddy \
-  -c "Set :com.apple.security.application-groups:0 $APP_GROUP_IDENTIFIER" \
-  "$TEMPORARY_ENTITLEMENTS/app.entitlements"
-/usr/libexec/PlistBuddy \
-  -c "Set :com.apple.security.application-groups:0 $APP_GROUP_IDENTIFIER" \
-  "$TEMPORARY_ENTITLEMENTS/widget.entitlements"
+for ENTITLEMENTS_FILE in "$TEMPORARY_ENTITLEMENTS/app.entitlements" "$TEMPORARY_ENTITLEMENTS/widget.entitlements"; do
+  if [[ "$SHARED_STORAGE_ENABLED" == true ]]; then
+    /usr/libexec/PlistBuddy -c "Set :com.apple.security.application-groups:0 $APP_GROUP_IDENTIFIER" "$ENTITLEMENTS_FILE"
+  else
+    /usr/libexec/PlistBuddy -c 'Delete :com.apple.security.application-groups' "$ENTITLEMENTS_FILE"
+  fi
+done
 
 SIGN_ARGUMENTS=(--force --sign "$CODE_SIGN_IDENTITY")
 if [[ "$CODE_SIGN_IDENTITY" != "-" ]]; then
@@ -120,6 +141,9 @@ codesign \
 plutil -lint "$APP_DIR/Contents/Info.plist"
 plutil -lint "$WIDGET_DIR/Contents/Info.plist"
 codesign --verify --deep --strict --verbose=2 "$APP_DIR"
+if [[ "$SHARED_STORAGE_ENABLED" == true ]]; then
+  python3 "$ROOT/Scripts/verify_signing.py" --app "$APP_DIR" --team "$APPLE_TEAM_ID"
+fi
 
 printf 'Packaged: %s\n' "$APP_DIR"
 printf 'Version: %s (%s)\n' "$VERSION" "$BUILD_NUMBER"

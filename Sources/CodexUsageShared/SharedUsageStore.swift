@@ -19,14 +19,17 @@ public struct SharedUsageStore {
 
   public init(
     appGroupIdentifier: String =
-      SharedUsageConfiguration.appGroupIdentifier()
+      SharedUsageConfiguration.appGroupIdentifier(),
+    enabled: Bool = SharedUsageConfiguration.sharedStorageEnabled()
   ) {
     self.appGroupIdentifier = appGroupIdentifier
-    fileURL = FileManager.default
-      .containerURL(
-        forSecurityApplicationGroupIdentifier: appGroupIdentifier
-      )?
-      .appendingPathComponent(Self.fileName, isDirectory: false)
+    fileURL =
+      enabled
+      ? FileManager.default
+        .containerURL(
+          forSecurityApplicationGroupIdentifier: appGroupIdentifier
+        )?
+        .appendingPathComponent(Self.fileName, isDirectory: false) : nil
   }
 
   public init(directoryURL: URL) {
@@ -89,14 +92,17 @@ public struct SharedWidgetPreferencesStore {
 
   public init(
     appGroupIdentifier: String =
-      SharedUsageConfiguration.appGroupIdentifier()
+      SharedUsageConfiguration.appGroupIdentifier(),
+    enabled: Bool = SharedUsageConfiguration.sharedStorageEnabled()
   ) {
     self.appGroupIdentifier = appGroupIdentifier
-    fileURL = FileManager.default
-      .containerURL(
-        forSecurityApplicationGroupIdentifier: appGroupIdentifier
-      )?
-      .appendingPathComponent(Self.fileName, isDirectory: false)
+    fileURL =
+      enabled
+      ? FileManager.default
+        .containerURL(
+          forSecurityApplicationGroupIdentifier: appGroupIdentifier
+        )?
+        .appendingPathComponent(Self.fileName, isDirectory: false) : nil
   }
 
   public init(directoryURL: URL) {

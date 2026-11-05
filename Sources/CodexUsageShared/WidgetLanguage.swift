@@ -19,14 +19,20 @@ extension AppLanguage {
     self == .simplifiedChinese ? "数据需要刷新" : "Usage data needs a refresh"
   }
 
+  public var widgetSyncFailureText: String {
+    self == .simplifiedChinese
+      ? "小组件同步暂不可用，请以此处的更新时间为准。"
+      : "Widget sync is unavailable. Check the update time shown here."
+  }
+
   public var widgetDisplayName: String {
-    self == .simplifiedChinese ? "Codex 周限额" : "Codex Weekly Limit"
+    self == .simplifiedChinese ? "订阅额度" : "Subscription Usage"
   }
 
   public var widgetDescription: String {
     self == .simplifiedChinese
-      ? "快速查看本周已用比例、剩余额度与重置时间。"
-      : "Quickly check weekly usage, remaining quota, and reset time."
+      ? "查看当前 Codex 或 Kimi 订阅的用量、剩余额度与更新时间。"
+      : "Check usage, remaining quota, and update time for the selected Codex or Kimi subscription."
   }
 
   public func widgetResetText(_ date: Date?) -> String {
@@ -36,11 +42,12 @@ extension AppLanguage {
 
   public func widgetUpdatedText(
     _ date: Date,
-    isStale: Bool
+    isStale: Bool,
+    relativeTo now: Date = Date()
   ) -> String {
     let formatter = DateFormatter()
     formatter.locale = locale
-    formatter.dateFormat = "HH:mm"
+    formatter.dateFormat = Calendar.current.isDate(date, inSameDayAs: now) ? "HH:mm" : "MM-dd HH:mm"
     let time = formatter.string(from: date)
 
     if self == .simplifiedChinese {
