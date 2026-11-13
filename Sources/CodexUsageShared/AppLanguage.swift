@@ -156,6 +156,65 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
       return "更新登录启动设置失败"
     case (.english, .launchAtLoginUpdateFailed):
       return "Failed to update launch at login"
+    case (.simplifiedChinese, .quotaNotProvided): return "未提供"
+    case (.english, .quotaNotProvided): return "Not provided"
+    case (.simplifiedChinese, .unlimitedQuota): return "不限量"
+    case (.english, .unlimitedQuota): return "Unlimited"
+    case (.simplifiedChinese, .quotaNotConnected): return "未连接订阅"
+    case (.english, .quotaNotConnected): return "Subscription not connected"
+    case (.simplifiedChinese, .quotaWaitingForSession): return "等待额度数据"
+    case (.english, .quotaWaitingForSession): return "Waiting for quota data"
+    case (.simplifiedChinese, .quotaUnavailable): return "暂时无法读取额度"
+    case (.english, .quotaUnavailable): return "Quota temporarily unavailable"
+    case (.simplifiedChinese, .quotaCLIUnavailable): return "请安装官方 CLI 并登录"
+    case (.english, .quotaCLIUnavailable): return "Install and sign in to the official CLI"
+    case (.simplifiedChinese, .quotaKey): return "套餐 API 密钥"
+    case (.english, .quotaKey): return "Subscription API key"
+    case (.simplifiedChinese, .quotaSaveConnection): return "连接订阅"
+    case (.english, .quotaSaveConnection): return "Connect subscription"
+    case (.simplifiedChinese, .quotaDisconnect): return "断开连接"
+    case (.english, .quotaDisconnect): return "Disconnect"
+    case (.simplifiedChinese, .quotaKeychainError): return "无法保存或删除本机连接，请重试"
+    case (.english, .quotaKeychainError): return "Couldn't change the local connection. Try again."
+    case (.simplifiedChinese, .quotaCopySetup): return "复制接入命令"
+    case (.english, .quotaCopySetup): return "Copy setup command"
+    case (.simplifiedChinese, .quotaSetupCopied): return "已复制"
+    case (.english, .quotaSetupCopied): return "Copied"
+    case (.simplifiedChinese, .quotaSetupHelp): return "将命令加入官方 CLI 的状态行配置，运行会话后读取额度。"
+    case (.english, .quotaSetupHelp):
+      return
+        "Add the command to the official CLI status line. Quota appears after a session reports it."
+    case (.simplifiedChinese, .quotaSeeMore): return "在菜单栏查看其余额度"
+    case (.english, .quotaSeeMore): return "More limits in the menu bar"
+    case (.simplifiedChinese, .quotaManageConnection): return "管理连接"
+    case (.english, .quotaManageConnection): return "Manage connection"
+    case (.simplifiedChinese, .quotaSetupGuide): return "配置说明"
+    case (.english, .quotaSetupGuide): return "Setup guide"
+    case (.simplifiedChinese, .quotaSession): return "会话额度"
+    case (.english, .quotaSession): return "Session quota"
+    case (.simplifiedChinese, .quotaWidgetDescription): return "查看菜单栏所选订阅的套餐、额度和重置时间。"
+    case (.english, .quotaWidgetDescription):
+      return "See the plan, quota and reset time for the subscription selected in the menu bar."
+    }
+  }
+
+  public func quotaUnitText(_ unit: SubscriptionQuotaUnit) -> String {
+    switch (self, unit) {
+    case (.simplifiedChinese, .requests): return "次"
+    case (.english, .requests): return "requests"
+    case (_, .tokens): return "tokens"
+    case (.simplifiedChinese, .credits): return "积分"
+    case (.english, .credits): return "credits"
+    case (_, .percent), (_, .unspecified): return ""
+    }
+  }
+
+  public func quotaAvailabilityText(_ state: SubscriptionUsageAvailability) -> String {
+    switch state {
+    case .available: return ""
+    case .waiting: return text(.quotaWaitingForSession)
+    case .notConnected: return text(.quotaNotConnected)
+    case .unavailable: return text(.quotaUnavailable)
     }
   }
 
@@ -240,6 +299,24 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
 }
 
 public enum AppText: Sendable {
+  case quotaNotProvided
+  case unlimitedQuota
+  case quotaNotConnected
+  case quotaWaitingForSession
+  case quotaUnavailable
+  case quotaCLIUnavailable
+  case quotaKey
+  case quotaSaveConnection
+  case quotaDisconnect
+  case quotaKeychainError
+  case quotaCopySetup
+  case quotaSetupCopied
+  case quotaSetupHelp
+  case quotaSeeMore
+  case quotaManageConnection
+  case quotaSetupGuide
+  case quotaSession
+  case quotaWidgetDescription
   case subtitle
   case refreshing
   case switchingLanguage

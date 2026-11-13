@@ -7,19 +7,28 @@ public struct SharedWidgetState: Codable, Equatable, Sendable {
   public let languageCode: String?
   public let subscriptionID: String?
   public let publishedAt: Date?
+  public let details: SubscriptionUsageDetails?
 
   public init(
     snapshot: SharedUsageSnapshot?,
     languageCode: String?,
     subscriptionID: String? = nil,
-    publishedAt: Date? = nil
+    publishedAt: Date? = nil,
+    details: SubscriptionUsageDetails? = nil
   ) {
-    let selected = subscriptionID ?? snapshot?.subscriptionID
-    self.snapshot = snapshot.flatMap {
-      selected == nil
-        || UsageSubscription.resolve($0.subscriptionID)
-          == UsageSubscription.resolve(selected)
-        ? $0 : nil
+    let selected = subscriptionID ?? details?.subscriptionID ?? snapshot?.subscriptionID
+    let owner = selected == nil ? .codex : UsageSubscription.recognized(selected)
+    self.snapshot = snapshot.flatMap { reading in
+      let source =
+        reading.subscriptionID == nil
+        ? .codex
+        : UsageSubscription.recognized(reading.subscriptionID)
+      // The old percentage snapshot is only for the original two subscriptions.
+      guard let source, source == owner, source.connection == .existing else { return nil }
+      return reading
+    }
+    self.details = details?.normalized.flatMap {
+      UsageSubscription.recognized($0.subscriptionID) == owner ? $0 : nil
     }
     self.languageCode = languageCode ?? snapshot?.languageCode
     self.subscriptionID = selected
@@ -29,8 +38,15 @@ public struct SharedWidgetState: Codable, Equatable, Sendable {
   public var normalized: SharedWidgetState {
     SharedWidgetState(
       snapshot: snapshot, languageCode: languageCode,
-      subscriptionID: subscriptionID, publishedAt: publishedAt
+      subscriptionID: subscriptionID, publishedAt: publishedAt, details: details
     )
+  }
+
+  public var displayDetails: SubscriptionUsageDetails? {
+    if let details { return details }
+    return snapshot.map {
+      SubscriptionUsageDetails(legacy: $0, subscription: UsageSubscription.resolve(subscriptionID))
+    }
   }
 
   /// Read old raw snapshots as well as the atomic state envelope.
@@ -40,7 +56,7 @@ public struct SharedWidgetState: Codable, Equatable, Sendable {
       return SharedWidgetState(snapshot: snapshot, languageCode: snapshot.languageCode)
     }
     guard let state = try? decoder.decode(Self.self, from: data),
-      state.snapshot != nil || state.languageCode != nil
+      state.snapshot != nil || state.details != nil || state.languageCode != nil
         || state.subscriptionID != nil || state.publishedAt != nil
     else { return nil }
     return state.normalized
@@ -66,8 +82,10 @@ public enum WidgetSnapshotResolver {
     if let live { return WidgetStateSelection(state: live.normalized, source: .live) }
     let sharedState = shared()
     let cachedState = cached()
-    let sharedDate = sharedState?.publishedAt ?? sharedState?.snapshot?.updatedAt ?? .distantPast
-    let cachedDate = cachedState?.publishedAt ?? cachedState?.snapshot?.updatedAt ?? .distantPast
+    let sharedDate =
+      sharedState?.publishedAt ?? sharedState?.displayDetails?.observedAt ?? .distantPast
+    let cachedDate =
+      cachedState?.publishedAt ?? cachedState?.displayDetails?.observedAt ?? .distantPast
     if let sharedState, cachedState == nil || sharedDate >= cachedDate {
       return WidgetStateSelection(state: sharedState.normalized, source: .shared)
     }

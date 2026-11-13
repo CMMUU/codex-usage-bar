@@ -4,21 +4,7 @@ import WidgetKit
 
 private struct UsageTimelineEntry: TimelineEntry {
   let date: Date
-  let snapshot: SharedUsageSnapshot?
-  let languageCode: String?
-  let subscriptionID: String?
-
-  init(
-    date: Date,
-    snapshot: SharedUsageSnapshot?,
-    languageCode: String? = nil,
-    subscriptionID: String? = nil
-  ) {
-    self.date = date
-    self.snapshot = snapshot
-    self.languageCode = languageCode
-    self.subscriptionID = subscriptionID
-  }
+  let state: SharedWidgetState?
 }
 
 private struct UsageTimelineProvider: TimelineProvider {
@@ -26,67 +12,52 @@ private struct UsageTimelineProvider: TimelineProvider {
   private let widgetStateCacheStore = SharedWidgetStateStore(
     directoryURL: Self.widgetCacheDirectory)
   private let appGroupStore = SharedUsageStore()
-  private let widgetCacheStore = SharedUsageStore(
-    directoryURL: Self.widgetCacheDirectory
-  )
+  private let widgetCacheStore = SharedUsageStore(directoryURL: Self.widgetCacheDirectory)
   private let appGroupPreferencesStore = SharedWidgetPreferencesStore()
   private let widgetPreferencesCacheStore = SharedWidgetPreferencesStore(
-    directoryURL: Self.widgetCacheDirectory
-  )
+    directoryURL: Self.widgetCacheDirectory)
   private let localClient = LocalUsageSnapshotClient()
 
   func placeholder(in context: Context) -> UsageTimelineEntry {
-    UsageTimelineEntry(date: Date(), snapshot: .placeholder)
+    let snapshot = SharedUsageSnapshot.placeholder
+    return UsageTimelineEntry(
+      date: Date(),
+      state: SharedWidgetState(snapshot: snapshot, languageCode: snapshot.languageCode))
   }
 
-  func getSnapshot(
-    in context: Context,
-    completion: @escaping (UsageTimelineEntry) -> Void
-  ) {
+  func getSnapshot(in context: Context, completion: @escaping (UsageTimelineEntry) -> Void) {
     if context.isPreview {
-      completion(UsageTimelineEntry(date: Date(), snapshot: .placeholder))
+      completion(placeholder(in: context))
       return
     }
-    loadSnapshot { snapshot, languageCode, subscriptionID in
-      completion(
-        UsageTimelineEntry(
-          date: Date(),
-          snapshot: snapshot,
-          languageCode: languageCode,
-          subscriptionID: subscriptionID
-        )
-      )
+    loadState { state in
+      completion(UsageTimelineEntry(date: Date(), state: state))
     }
   }
 
   func getTimeline(
-    in context: Context,
-    completion: @escaping (Timeline<UsageTimelineEntry>) -> Void
+    in context: Context, completion: @escaping (Timeline<UsageTimelineEntry>) -> Void
   ) {
-    loadSnapshot { snapshot, languageCode, subscriptionID in
+    loadState { state in
       let now = Date()
-      let entries = WidgetTimelineSchedule.entryDates(updatedAt: snapshot?.updatedAt, now: now).map
-      {
-        UsageTimelineEntry(
-          date: $0, snapshot: snapshot, languageCode: languageCode, subscriptionID: subscriptionID)
+      let details = state?.displayDetails
+      let nextReset = details?.quotas.compactMap(\.resetsAt).filter { $0 > now }.min()
+      var dates = WidgetTimelineSchedule.entryDates(updatedAt: details?.observedAt, now: now)
+      if let nextReset, let last = dates.last, nextReset < last {
+        dates.insert(nextReset, at: 1)
       }
+      let entries = dates.map { UsageTimelineEntry(date: $0, state: state) }
       let routineRefresh = now.addingTimeInterval(SharedUsageConfiguration.refreshInterval)
       let refreshDate =
-        snapshot?.displayQuotas.compactMap(\.resetsAt).min().map {
-          min(routineRefresh, max(now.addingTimeInterval(60), $0))
-        } ?? routineRefresh
+        nextReset.map { min(routineRefresh, max(now.addingTimeInterval(60), $0)) }
+        ?? routineRefresh
 
-      completion(
-        Timeline(entries: entries, policy: .after(refreshDate))
-      )
+      completion(Timeline(entries: entries, policy: .after(refreshDate)))
     }
   }
 
-  private func loadSnapshot(
-    completion: @escaping (SharedUsageSnapshot?, String?, String?) -> Void
-  ) {
-    // Always consult the running app. A readable App Group file can still be
-    // stale when the app has lost permission to write that container.
+  private func loadState(completion: @escaping (SharedWidgetState?) -> Void) {
+    // Consult the live app first because App Group storage can lag behind it.
     localClient.loadPayload { live in
       let selection = WidgetSnapshotResolver.select(
         live: live,
@@ -100,14 +71,13 @@ private struct UsageTimelineProvider: TimelineProvider {
             ?? legacyState(
               snapshot: widgetCacheStore.load(), preferences: widgetPreferencesCacheStore.load())
         })
-      let state = selection.state
-      if let state {
+      if let state = selection.state {
         do { try widgetStateCacheStore.save(state) } catch {
           WidgetSyncDiagnostics.failure("write-widget-cache", error: error)
         }
       }
       WidgetSyncDiagnostics.received(selection)
-      completion(state?.snapshot, state?.languageCode, state?.subscriptionID)
+      completion(selection.state)
     }
   }
 
@@ -117,8 +87,7 @@ private struct UsageTimelineProvider: TimelineProvider {
     guard snapshot != nil || preferences != nil else { return nil }
     return SharedWidgetState(
       snapshot: snapshot, languageCode: preferences?.languageCode,
-      subscriptionID: preferences?.subscriptionID
-    )
+      subscriptionID: preferences?.subscriptionID)
   }
 
   private static let widgetCacheDirectory = SharedUsageConfiguration.widgetCacheDirectory
@@ -130,233 +99,154 @@ private struct UsageWidgetView: View {
   let entry: UsageTimelineEntry
 
   private var language: AppLanguage {
-    AppLanguage.resolve(
-      entry.languageCode ?? entry.snapshot?.languageCode
-    )
+    AppLanguage.resolve(entry.state?.languageCode)
   }
 
   private var subscription: UsageSubscription {
-    UsageSubscription.resolve(
-      entry.subscriptionID ?? entry.snapshot?.subscriptionID
-    )
+    UsageSubscription.resolve(entry.state?.subscriptionID)
   }
 
   var body: some View {
     Group {
-      if let snapshot = entry.snapshot {
-        switch family {
-        case .systemMedium:
-          mediumContent(snapshot)
-        default:
-          smallContent(snapshot)
+      if let details = entry.state?.displayDetails, let primary = details.primaryQuota {
+        if family == .systemMedium {
+          mediumContent(details)
+        } else {
+          smallContent(details, quota: primary)
         }
       } else {
-        emptyContent
+        emptyContent(entry.state?.displayDetails?.availability ?? .waiting)
       }
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .modifier(WidgetBackgroundModifier())
     .environment(\.locale, language.locale)
     .accessibilityElement(children: .combine)
   }
 
   private func smallContent(
-    _ snapshot: SharedUsageSnapshot
+    _ details: SubscriptionUsageDetails, quota: SubscriptionQuota
   ) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-      header(snapshot)
-
+    VStack(alignment: .leading, spacing: 4) {
+      header(stale: details.isStale(relativeTo: entry.date))
+      planLine(details)
       Spacer(minLength: 0)
-
-      HStack(alignment: .center, spacing: 12) {
-        usageRing(snapshot, diameter: 64)
-
-        VStack(alignment: .leading, spacing: 4) {
-          Text(snapshot.primaryQuota.kind.shortTitle(in: language))
-            .font(.caption.weight(.medium))
-          Text(language.text(.remainingQuota))
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-          Text(percentText(snapshot.remainingPercent))
-            .font(.title3.weight(.semibold))
-            .monospacedDigit()
-        }
-      }
-
+      Text(quota.title(in: language, for: subscription))
+        .font(.caption.weight(.semibold))
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
+      amountLine(language.widgetUsedText, value: quota.usedText(in: language))
+      amountLine(language.text(.remainingQuota), value: quota.remainingText(in: language))
       Spacer(minLength: 0)
-
-      VStack(alignment: .leading, spacing: 2) {
-        resetText(snapshot)
-        Text(updatedText(snapshot))
-          .font(.system(size: 9))
-          .foregroundStyle(snapshot.isStale(relativeTo: entry.date) ? .orange : .secondary)
-          .lineLimit(1)
-      }
+      resetLine(quota)
+      observationLine(details)
     }
-    .padding(12)
+    .padding(10)
   }
 
-  private func mediumContent(
-    _ snapshot: SharedUsageSnapshot
-  ) -> some View {
-    HStack(spacing: 16) {
-      VStack(alignment: .leading, spacing: 10) {
-        header(snapshot)
-        usageRing(snapshot)
+  private func mediumContent(_ details: SubscriptionUsageDetails) -> some View {
+    HStack(alignment: .top, spacing: 10) {
+      VStack(alignment: .leading, spacing: 5) {
+        header(stale: details.isStale(relativeTo: entry.date))
+        planLine(details)
+        Spacer(minLength: 0)
+        observationLine(details)
       }
+      .frame(width: 99, alignment: .leading)
 
       Divider()
 
-      VStack(alignment: .leading, spacing: 6) {
-        if subscription == .kimi {
-          ForEach(snapshot.displayQuotas) { window in
-            VStack(alignment: .leading, spacing: 1) {
-              compactRow(
-                window.kind.title(in: language, for: subscription),
-                percentText(window.usedPercent)
-              )
-              Text(language.widgetResetText(window.resetsAt))
-                .font(.system(size: 9))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+      VStack(alignment: .leading, spacing: 5) {
+        ForEach(details.quotas.prefix(3)) { quota in
+          VStack(alignment: .leading, spacing: 1) {
+            Text(quota.title(in: language, for: subscription))
+              .font(.caption.weight(.semibold))
+              .lineLimit(1)
+              .minimumScaleFactor(0.7)
+            HStack(spacing: 8) {
+              amountLine(language.widgetUsedText, value: quota.usedText(in: language))
+              amountLine(language.text(.remainingQuota), value: quota.remainingText(in: language))
             }
+            resetLine(quota)
           }
-        } else {
-          compactRow(language.text(.weeklyUsed), percentText(snapshot.usedPercent))
-          compactRow(language.text(.remainingQuota), percentText(snapshot.remainingPercent))
-          if let fiveHourUsed = snapshot.fiveHourUsedPercent {
-            compactRow(language.text(.fiveHourLimit), percentText(fiveHourUsed))
-          }
-          compactRow(language.text(.resetTime), language.resetDisplayText(snapshot.resetsAt))
         }
-        Spacer(minLength: 0)
-        Text(updatedText(snapshot))
-          .font(.caption2)
-          .foregroundStyle(.secondary)
+        if details.quotas.count > 3 {
+          Text(language.text(.quotaSeeMore))
+            .font(.system(size: 9))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .padding(16)
+    .padding(10)
   }
 
-  private var emptyContent: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      HStack(spacing: 6) {
-        BrandMark().frame(width: 18, height: 18)
-        Text(subscription.displayName).font(.headline)
-      }
-
-      Spacer()
-
-      Text(language.widgetWaitingTitle)
-        .font(.title3.weight(.semibold))
+  private func emptyContent(_ availability: SubscriptionUsageAvailability) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      header(stale: false)
+      Spacer(minLength: 0)
+      Text(language.quotaAvailabilityText(availability))
+        .font(.subheadline.weight(.semibold))
       Text(language.widgetWaitingBody)
         .font(.caption)
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
     }
-    .padding(16)
+    .padding(12)
   }
 
-  private func header(
-    _ snapshot: SharedUsageSnapshot
-  ) -> some View {
-    HStack(spacing: 6) {
-      BrandMark().frame(width: 18, height: 18)
-      Text(subscription.displayName)
-        .font(.headline)
-      Spacer(minLength: 4)
-      if snapshot.isStale(relativeTo: entry.date) {
+  private func header(stale: Bool) -> some View {
+    HStack(spacing: 4) {
+      BrandMark().frame(width: 15, height: 15)
+      Text(subscription.displayName(in: language))
+        .font(.caption.weight(.bold))
+        .lineLimit(1)
+        .minimumScaleFactor(0.64)
+      Spacer(minLength: 0)
+      if stale {
         Image(systemName: "clock.badge.exclamationmark")
-          .foregroundStyle(.orange)
-          .help(language.widgetStaleHelp)
-      } else {
-        Circle()
-          .fill(progressColor(snapshot.usedPercent))
-          .frame(width: 7, height: 7)
-          .accessibilityHidden(true)
-      }
-    }
-  }
-
-  private func usageRing(
-    _ snapshot: SharedUsageSnapshot,
-    diameter: CGFloat = 82
-  ) -> some View {
-    ZStack {
-      Circle()
-        .stroke(.secondary.opacity(0.16), lineWidth: 8)
-      Circle()
-        .trim(from: 0, to: snapshot.usedPercent / 100)
-        .stroke(
-          progressColor(snapshot.usedPercent),
-          style: StrokeStyle(lineWidth: 8, lineCap: .round)
-        )
-        .rotationEffect(.degrees(-90))
-      VStack(spacing: 0) {
-        Text(percentText(snapshot.usedPercent))
-          .font(.system(size: 22, weight: .bold, design: .rounded))
-          .monospacedDigit()
-        Text(language.widgetUsedText)
           .font(.caption2)
-          .foregroundStyle(.secondary)
+          .foregroundStyle(.orange)
+          .accessibilityLabel(language.widgetStaleHelp)
       }
     }
-    .frame(width: diameter, height: diameter)
-    .accessibilityLabel(snapshot.primaryQuota.kind.title(in: language, for: subscription))
-    .accessibilityValue(percentText(snapshot.usedPercent))
   }
 
-  private func resetText(
-    _ snapshot: SharedUsageSnapshot
-  ) -> some View {
-    HStack(spacing: 5) {
-      Image(systemName: "arrow.clockwise")
-      Text(language.widgetResetText(snapshot.resetsAt))
+  private func planLine(_ details: SubscriptionUsageDetails) -> some View {
+    Text(details.planDisplayName(in: language))
+      .font(.caption2)
+      .foregroundStyle(.secondary)
+      .lineLimit(1)
+      .minimumScaleFactor(0.72)
+      .accessibilityLabel(language.text(.currentPlan))
+      .accessibilityValue(details.planDisplayName(in: language))
+  }
+
+  private func amountLine(_ title: String, value: String) -> some View {
+    HStack(spacing: 3) {
+      Text(title).foregroundStyle(.secondary)
+      Text(value).fontWeight(.semibold).monospacedDigit()
     }
     .font(.caption2)
-    .foregroundStyle(.secondary)
+    .lineLimit(1)
+    .minimumScaleFactor(0.7)
   }
 
-  private func compactRow(
-    _ title: String,
-    _ value: String
-  ) -> some View {
-    HStack(spacing: 4) {
-      Text(title)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-      Spacer(minLength: 4)
-      Text(value)
-        .font(.caption.weight(.semibold))
-        .monospacedDigit()
-    }
+  private func resetLine(_ quota: SubscriptionQuota) -> some View {
+    Text(language.widgetResetText(quota.resetsAt))
+      .font(.system(size: 9))
+      .foregroundStyle(.secondary)
+      .lineLimit(1)
+      .minimumScaleFactor(0.7)
   }
 
-  private func progressColor(_ usedPercent: Double) -> Color {
-    if usedPercent >= 90 {
-      return .red
-    }
-    if usedPercent >= 75 {
-      return .orange
-    }
-    return .accentColor
-  }
-
-  private func percentText(_ value: Double) -> String {
-    "\(Int(value.rounded()))%"
-  }
-
-  private func updatedText(
-    _ snapshot: SharedUsageSnapshot
-  ) -> String {
-    language.widgetUpdatedText(
-      snapshot.updatedAt,
-      isStale: snapshot.isStale(relativeTo: entry.date),
-      relativeTo: entry.date
-    )
+  private func observationLine(_ details: SubscriptionUsageDetails) -> some View {
+    Text(details.observationText(in: language, relativeTo: entry.date))
+      .font(.system(size: 9))
+      .foregroundStyle(details.isStale(relativeTo: entry.date) ? .orange : .secondary)
+      .lineLimit(1)
+      .minimumScaleFactor(0.72)
   }
 }
 
@@ -413,7 +303,7 @@ struct CodexUsageWidget: Widget {
       UsageWidgetView(entry: entry)
     }
     .configurationDisplayName(language.widgetDisplayName)
-    .description(language.widgetDescription)
+    .description(language.text(.quotaWidgetDescription))
     .supportedFamilies([.systemSmall, .systemMedium])
   }
 }

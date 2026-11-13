@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0120C3160730E8EF72CCADF3 /* ClaudeUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13321C0AD147228B94C653DE /* ClaudeUsageClient.swift */; };
 		04ACFF3F353C44F11D7A9FEC /* MenuBarLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715B1A9DFACEDD913D307D75 /* MenuBarLabel.swift */; };
 		0AE0E3E67B492C52ABF45AF0 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A06D789516C01E0E027B38FF /* AppIcon.icns */; };
 		0BAF8E4744CBDB8CA0C83C50 /* KimiUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28372137E754014A43D41062 /* KimiUsageClient.swift */; };
@@ -14,19 +15,28 @@
 		118A4F7CB169754091C560AE /* CodexUsageBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCE3BE4C8AEFD6DBBEDDE34 /* CodexUsageBarApp.swift */; };
 		1D455EC2C019C40DACA5FD1A /* CodexAppServerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B766DA68E8BCCD5AEB83F11 /* CodexAppServerClient.swift */; };
 		272F2E3A48F89C9FEA53F25E /* libCodexUsageCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B62E6AACDE388B3D9F68AC13 /* libCodexUsageCore.a */; };
+		3077EB61E4B0DBD6EE24314B /* GLMUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B8C4AC19F552AB93F42C5B /* GLMUsageClient.swift */; };
 		378B8A41218266EAF060B76C /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A06D789516C01E0E027B38FF /* AppIcon.icns */; };
 		3CA6DC6419E6780A9776B7F8 /* BrandMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20D933D7A66C1DE9781DE30C /* BrandMark.swift */; };
+		3D0C982F20960E15DDFA8A24 /* SubscriptionCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA36492CD8FD0C491D0FFAA /* SubscriptionCredentialStore.swift */; };
 		3EB9B8473461E84AC7D12573 /* LocalUsageSnapshotBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */; };
 		478AE62507861F4B424B3782 /* UsageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5964387CC7B9C1338680606C /* UsageViewModel.swift */; };
+		4B99C985067AE58FBDDD9D73 /* BailianUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E7589A496765BE72479BE18 /* BailianUsageClient.swift */; };
 		4E30216F25E52DFB4694ACC5 /* SharedUsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */; };
 		4F97F18AEBE689EDF3988B6F /* DocumentationSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ECB92954168A746830981F /* DocumentationSnapshot.swift */; };
 		5130E3909B626E9983F3FDA5 /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFA933C5E8F4C001CAC9D8E0 /* UpdateManager.swift */; };
 		5207762E1C66FF0C8B645971 /* CodexExecutableLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9854879767FA111E08BD03 /* CodexExecutableLocator.swift */; };
 		551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */; };
+		5D2A6D6A562D0C1265499931 /* AntigravityUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098A4BF9EE35CCCCA4D11A64 /* AntigravityUsageClient.swift */; };
+		5D4E4307191923B055321074 /* CopilotUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0934DD24FA1BE8731E4AE0 /* CopilotUsageClient.swift */; };
 		5F3991E2CD5C5F5C27CAC822 /* SharedWidgetState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93ADD4F68098BB10D3475725 /* SharedWidgetState.swift */; };
+		65A000DFCB7C1E924F083421 /* VolcengineArkUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5DD2377F7259FFAB990064 /* VolcengineArkUsageClient.swift */; };
 		873A7669A94B07E2D701BFAB /* WidgetTimelineSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04F953A87F2D3BDA10B3C321 /* WidgetTimelineSchedule.swift */; };
+		88E530FE31626E8045D159A6 /* SubscriptionUsageDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58FB9502171CA6E9F012CC8 /* SubscriptionUsageDetails.swift */; };
+		959BFA8B3433E582B4818399 /* SubscriptionUsageAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 319F447A0582987111F3DCD8 /* SubscriptionUsageAdapter.swift */; };
 		9F673B2D4A996BC58DDE8351 /* libCodexUsageShared.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 464C371BD43D481345921981 /* libCodexUsageShared.a */; };
 		A111EB827FA9DB364CFBAEC0 /* WidgetSyncDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7101EA6CE330B931D7C02F49 /* WidgetSyncDiagnostics.swift */; };
+		ADE1F4100C63D674D1AA7A5F /* MiniMaxUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9147FAFBF944F91E28131E68 /* MiniMaxUsageClient.swift */; };
 		AF97574E9DF7F760F1AF0DBF /* UsageMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966E4F72C09CBA6C5B7D1914 /* UsageMenuView.swift */; };
 		B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30702127D771354F007969A4 /* WidgetLanguage.swift */; };
 		BED3C5D8D31711DBE430DB42 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F7F79DBC97C363AAAB5DFB9 /* AppLanguage.swift */; };
@@ -95,20 +105,28 @@
 /* Begin PBXFileReference section */
 		04F953A87F2D3BDA10B3C321 /* WidgetTimelineSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetTimelineSchedule.swift; sourceTree = "<group>"; };
 		0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUsageSnapshot.swift; sourceTree = "<group>"; };
+		098A4BF9EE35CCCCA4D11A64 /* AntigravityUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntigravityUsageClient.swift; sourceTree = "<group>"; };
+		13321C0AD147228B94C653DE /* ClaudeUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeUsageClient.swift; sourceTree = "<group>"; };
+		1B0934DD24FA1BE8731E4AE0 /* CopilotUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotUsageClient.swift; sourceTree = "<group>"; };
 		1BB5FDEC776BDE5706254458 /* BrandMark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = BrandMark.png; sourceTree = "<group>"; };
 		20D933D7A66C1DE9781DE30C /* BrandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandMark.swift; sourceTree = "<group>"; };
 		2598D59EB5DCF8B1060DE846 /* CodexModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexModels.swift; sourceTree = "<group>"; };
 		28372137E754014A43D41062 /* KimiUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiUsageClient.swift; sourceTree = "<group>"; };
 		2B766DA68E8BCCD5AEB83F11 /* CodexAppServerClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexAppServerClient.swift; sourceTree = "<group>"; };
 		30702127D771354F007969A4 /* WidgetLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetLanguage.swift; sourceTree = "<group>"; };
+		319F447A0582987111F3DCD8 /* SubscriptionUsageAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionUsageAdapter.swift; sourceTree = "<group>"; };
+		3E7589A496765BE72479BE18 /* BailianUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BailianUsageClient.swift; sourceTree = "<group>"; };
 		3F9854879767FA111E08BD03 /* CodexExecutableLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexExecutableLocator.swift; sourceTree = "<group>"; };
 		40D04FF7EE0775B37B299FEC /* CodexUsageWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CodexUsageWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		464C371BD43D481345921981 /* libCodexUsageShared.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCodexUsageShared.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		48B8C4AC19F552AB93F42C5B /* GLMUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GLMUsageClient.swift; sourceTree = "<group>"; };
+		4C5DD2377F7259FFAB990064 /* VolcengineArkUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolcengineArkUsageClient.swift; sourceTree = "<group>"; };
 		57ECB92954168A746830981F /* DocumentationSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentationSnapshot.swift; sourceTree = "<group>"; };
 		5964387CC7B9C1338680606C /* UsageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageViewModel.swift; sourceTree = "<group>"; };
 		7101EA6CE330B931D7C02F49 /* WidgetSyncDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSyncDiagnostics.swift; sourceTree = "<group>"; };
 		715B1A9DFACEDD913D307D75 /* MenuBarLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabel.swift; sourceTree = "<group>"; };
 		7FCE3BE4C8AEFD6DBBEDDE34 /* CodexUsageBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageBarApp.swift; sourceTree = "<group>"; };
+		9147FAFBF944F91E28131E68 /* MiniMaxUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniMaxUsageClient.swift; sourceTree = "<group>"; };
 		93ADD4F68098BB10D3475725 /* SharedWidgetState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedWidgetState.swift; sourceTree = "<group>"; };
 		966E4F72C09CBA6C5B7D1914 /* UsageMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMenuView.swift; sourceTree = "<group>"; };
 		9F7F79DBC97C363AAAB5DFB9 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
@@ -118,7 +136,9 @@
 		C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUsageStore.swift; sourceTree = "<group>"; };
 		CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSubscription.swift; sourceTree = "<group>"; };
 		CB3CD68EC00EFF650449EE33 /* LocalUsageSnapshotBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalUsageSnapshotBridge.swift; sourceTree = "<group>"; };
+		D58FB9502171CA6E9F012CC8 /* SubscriptionUsageDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionUsageDetails.swift; sourceTree = "<group>"; };
 		E9F0D22719518AF71134EA29 /* CodexUsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexUsageBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EFA36492CD8FD0C491D0FFAA /* SubscriptionCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionCredentialStore.swift; sourceTree = "<group>"; };
 		F87E3021DF7F9A701E8FDA81 /* CodexUsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageWidget.swift; sourceTree = "<group>"; };
 		FFA933C5E8F4C001CAC9D8E0 /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -193,10 +213,19 @@
 		3DCFC54A4209EA636D892F8D /* CodexUsageCore */ = {
 			isa = PBXGroup;
 			children = (
+				098A4BF9EE35CCCCA4D11A64 /* AntigravityUsageClient.swift */,
+				3E7589A496765BE72479BE18 /* BailianUsageClient.swift */,
+				13321C0AD147228B94C653DE /* ClaudeUsageClient.swift */,
 				2B766DA68E8BCCD5AEB83F11 /* CodexAppServerClient.swift */,
 				3F9854879767FA111E08BD03 /* CodexExecutableLocator.swift */,
 				2598D59EB5DCF8B1060DE846 /* CodexModels.swift */,
+				1B0934DD24FA1BE8731E4AE0 /* CopilotUsageClient.swift */,
+				48B8C4AC19F552AB93F42C5B /* GLMUsageClient.swift */,
 				28372137E754014A43D41062 /* KimiUsageClient.swift */,
+				9147FAFBF944F91E28131E68 /* MiniMaxUsageClient.swift */,
+				EFA36492CD8FD0C491D0FFAA /* SubscriptionCredentialStore.swift */,
+				319F447A0582987111F3DCD8 /* SubscriptionUsageAdapter.swift */,
+				4C5DD2377F7259FFAB990064 /* VolcengineArkUsageClient.swift */,
 			);
 			name = CodexUsageCore;
 			path = Sources/CodexUsageCore;
@@ -232,6 +261,7 @@
 				0683A565FCF517BCE9CC0E02 /* SharedUsageSnapshot.swift */,
 				C2A1C90E38989E05CBB134D0 /* SharedUsageStore.swift */,
 				93ADD4F68098BB10D3475725 /* SharedWidgetState.swift */,
+				D58FB9502171CA6E9F012CC8 /* SubscriptionUsageDetails.swift */,
 				ACEEC35E53E284E6B52F1D68 /* UsageQuotaWindow.swift */,
 				CAE7AC9F375D1BA2A45621B9 /* UsageSubscription.swift */,
 				30702127D771354F007969A4 /* WidgetLanguage.swift */,
@@ -465,6 +495,7 @@
 				4E30216F25E52DFB4694ACC5 /* SharedUsageSnapshot.swift in Sources */,
 				551B965F108F917C29558DEA /* SharedUsageStore.swift in Sources */,
 				5F3991E2CD5C5F5C27CAC822 /* SharedWidgetState.swift in Sources */,
+				88E530FE31626E8045D159A6 /* SubscriptionUsageDetails.swift in Sources */,
 				C626285519829C12906F997B /* UsageQuotaWindow.swift in Sources */,
 				F5DA4D7C405913D0324BA5BB /* UsageSubscription.swift in Sources */,
 				B8C02E32592CF93974FDE7B6 /* WidgetLanguage.swift in Sources */,
@@ -477,10 +508,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5D2A6D6A562D0C1265499931 /* AntigravityUsageClient.swift in Sources */,
+				4B99C985067AE58FBDDD9D73 /* BailianUsageClient.swift in Sources */,
+				0120C3160730E8EF72CCADF3 /* ClaudeUsageClient.swift in Sources */,
 				1D455EC2C019C40DACA5FD1A /* CodexAppServerClient.swift in Sources */,
 				5207762E1C66FF0C8B645971 /* CodexExecutableLocator.swift in Sources */,
 				F5670BE71FF3872AED5ED4AE /* CodexModels.swift in Sources */,
+				5D4E4307191923B055321074 /* CopilotUsageClient.swift in Sources */,
+				3077EB61E4B0DBD6EE24314B /* GLMUsageClient.swift in Sources */,
 				0BAF8E4744CBDB8CA0C83C50 /* KimiUsageClient.swift in Sources */,
+				ADE1F4100C63D674D1AA7A5F /* MiniMaxUsageClient.swift in Sources */,
+				3D0C982F20960E15DDFA8A24 /* SubscriptionCredentialStore.swift in Sources */,
+				959BFA8B3433E582B4818399 /* SubscriptionUsageAdapter.swift in Sources */,
+				65A000DFCB7C1E924F083421 /* VolcengineArkUsageClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -596,7 +636,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -617,7 +657,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.4.6;
+				MARKETING_VERSION = 0.4.7;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -795,7 +835,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = zh_CN;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -810,7 +850,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.4.6;
+				MARKETING_VERSION = 0.4.7;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

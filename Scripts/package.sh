@@ -3,8 +3,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Codex Usage Bar"
-VERSION="${VERSION:-0.4.6}"
-BUILD_NUMBER="${BUILD_NUMBER:-15}"
+VERSION="${VERSION:-0.4.7}"
+BUILD_NUMBER="${BUILD_NUMBER:-16}"
 CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"
 SIGNING_MODE="${SIGNING_MODE:-development}"
 SHARED_STORAGE_ENABLED=false

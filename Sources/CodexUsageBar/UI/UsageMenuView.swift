@@ -7,6 +7,8 @@ struct UsageMenuView: View {
   @ObservedObject var viewModel: UsageViewModel
   @ObservedObject var updateManager: UpdateManager
   @Binding var language: AppLanguage
+  @State private var subscriptionKey = ""
+  @State private var copiedSetup = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -17,6 +19,7 @@ struct UsageMenuView: View {
       if let errorMessage = viewModel.errorDisplayText(for: language) {
         errorPanel(errorMessage)
       }
+      connectionSection
 
       if viewModel.widgetSyncFailed {
         Text(language.widgetSyncFailureText)
@@ -33,6 +36,10 @@ struct UsageMenuView: View {
     .padding(18)
     .frame(width: 340)
     .environment(\.locale, language.locale)
+    .onChange(of: viewModel.selectedSubscription) { _ in
+      subscriptionKey = ""
+      copiedSetup = false
+    }
     .task {
       await viewModel.refreshIfStale()
       updateManager.checkForUpdateInformationIfNeeded()
@@ -44,8 +51,10 @@ struct UsageMenuView: View {
       BrandMark()
         .frame(width: 32, height: 32)
       VStack(alignment: .leading, spacing: 3) {
-        Text(viewModel.selectedSubscription.displayName)
+        Text(viewModel.selectedSubscription.displayName(in: language))
           .font(.system(size: 18, weight: .bold, design: .rounded))
+          .lineLimit(1)
+          .minimumScaleFactor(0.72)
         Text(
           viewModel.selectedSubscription == .codex
             ? language.text(.subtitle) : language.text(.kimiSubtitle)
@@ -90,7 +99,7 @@ struct UsageMenuView: View {
           viewModel.selectSubscription(subscription)
         } label: {
           HStack {
-            Text(subscription.displayName)
+            Text(subscription.displayName(in: language))
             if subscription == viewModel.selectedSubscription {
               Image(systemName: "checkmark")
             }
@@ -99,7 +108,7 @@ struct UsageMenuView: View {
       }
     } label: {
       HStack(spacing: 6) {
-        Text(viewModel.selectedSubscription.displayName)
+        Text(viewModel.selectedSubscription.displayName(in: language))
           .font(.subheadline.weight(.semibold))
         Spacer()
         Image(systemName: "chevron.up.chevron.down")
@@ -118,101 +127,133 @@ struct UsageMenuView: View {
     .accessibilityLabel(language.text(.subscriptionPicker))
   }
 
+  @ViewBuilder
   private var usageSection: some View {
+    let details = viewModel.displayDetails
+    if details.quotas.count > 3 {
+      ScrollView {
+        quotaList(details)
+      }
+      .frame(height: 256)
+    } else if !details.quotas.isEmpty {
+      quotaList(details)
+    } else if viewModel.errorDisplayText(for: language) == nil {
+      Text(language.quotaAvailabilityText(details.availability))
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+    }
+  }
+
+  private func quotaList(_ details: SubscriptionUsageDetails) -> some View {
     VStack(alignment: .leading, spacing: 10) {
-      HStack(alignment: .firstTextBaseline) {
-        Text(
-          primaryQuotaTitle
-        )
-        .font(.headline)
-        Spacer()
-        Text(percentText(viewModel.snapshot?.usedPercent))
-          .font(.system(size: 26, weight: .semibold, design: .rounded))
-          .monospacedDigit()
-      }
-
-      UsageProgressBar(
-        value: viewModel.snapshot?.usedPercent ?? 0,
-        color: progressColor
-      )
-      .accessibilityLabel(primaryQuotaTitle)
-      .accessibilityValue(percentText(viewModel.snapshot?.usedPercent))
-
-      HStack {
-        Text(language.text(.remainingQuota))
-          .foregroundStyle(.secondary)
-        Spacer()
-        Text(percentText(viewModel.snapshot?.remainingPercent))
-          .fontWeight(.medium)
-          .monospacedDigit()
-      }
-      .font(.subheadline)
-
-      ForEach(Array((viewModel.displaySnapshot?.displayQuotas ?? []).dropFirst())) { window in
-        quotaSection(window)
+      ForEach(details.quotas) { quota in
+        quotaSection(quota, isPrimary: quota.id == details.primaryQuota?.id)
       }
     }
   }
 
-  private var primaryQuotaTitle: String {
-    viewModel.primaryQuotaKind.title(in: language, for: viewModel.selectedSubscription)
-  }
-
-  private func quotaSection(_ window: UsageQuotaWindow) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack {
-        Text(window.kind.title(in: language, for: viewModel.selectedSubscription))
-          .font(.subheadline.weight(.medium))
-        Spacer()
-        Text(percentText(window.usedPercent))
-          .font(.subheadline.weight(.semibold))
+  private func quotaSection(_ quota: SubscriptionQuota, isPrimary: Bool) -> some View {
+    let title = quota.title(in: language, for: viewModel.selectedSubscription)
+    let used = quota.usedText(in: language)
+    return VStack(alignment: .leading, spacing: 5) {
+      HStack(alignment: .firstTextBaseline) {
+        Text(title)
+          .font(isPrimary ? .headline : .subheadline.weight(.medium))
+          .lineLimit(1)
+        Spacer(minLength: 6)
+        Text("\(language.widgetUsedText) \(used)")
+          .font(.system(size: isPrimary ? 17 : 13, weight: .semibold, design: .rounded))
           .monospacedDigit()
+          .lineLimit(1)
+          .minimumScaleFactor(0.68)
       }
-
-      UsageProgressBar(
-        value: window.usedPercent,
-        color: progressColor(for: window.usedPercent)
-      )
-      .accessibilityLabel(window.kind.title(in: language, for: viewModel.selectedSubscription))
-      .accessibilityValue(percentText(window.usedPercent))
-
-      HStack {
-        Text(
-          "\(language.text(.remainingQuota)) "
-            + percentText(window.remainingPercent)
-        )
-        Spacer()
-        Text(
-          "\(language.text(.resetTime)) "
-            + language.resetDisplayText(window.resetsAt)
-        )
+      if let percent = quota.usedPercent {
+        UsageProgressBar(value: percent, color: progressColor(for: percent))
+          .accessibilityHidden(true)
+      }
+      VStack(spacing: 4) {
+        detailRow(language.text(.remainingQuota), value: quota.remainingText(in: language))
+        detailRow(language.text(.resetTime), value: language.resetDisplayText(quota.resetsAt))
       }
       .font(.caption)
-      .foregroundStyle(.secondary)
     }
-    .padding(.top, 2)
+    .accessibilityElement(children: .combine)
   }
 
   private var detailsSection: some View {
-    VStack(spacing: 9) {
-      detailRow(
-        language.text(.resetTime),
-        value: viewModel.resetDisplayText(for: language)
-      )
-      detailRow(
-        language.text(.currentPlan),
-        value: viewModel.planDisplayName(for: language)
-      )
-      detailRow(
-        language.text(.refreshTime),
-        value: viewModel.lastUpdatedDisplayText(for: language)
-      )
+    let details = viewModel.displayDetails
+    let now = Date()
+    return VStack(alignment: .leading, spacing: 9) {
+      detailRow(language.text(.currentPlan), value: details.planDisplayName(in: language))
+      Text(details.observationText(in: language, relativeTo: now))
+        .font(.caption)
+        .foregroundStyle(details.isStale(relativeTo: now) ? .orange : .secondary)
 
       if let limitName = viewModel.snapshot?.limitName, !limitName.isEmpty {
         detailRow(language.text(.limitType), value: limitName)
       }
     }
     .font(.subheadline)
+  }
+
+  @ViewBuilder
+  private var connectionSection: some View {
+    switch viewModel.selectedSubscription.connection {
+    case .apiKey:
+      DisclosureGroup(language.text(.quotaManageConnection)) {
+        VStack(alignment: .leading, spacing: 8) {
+          SecureField(language.text(.quotaKey), text: $subscriptionKey)
+            .textFieldStyle(.roundedBorder)
+          HStack {
+            Button(language.text(.quotaSaveConnection)) {
+              if viewModel.connectWithKey(subscriptionKey) { subscriptionKey = "" }
+            }
+            .disabled(subscriptionKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            if viewModel.hasSubscriptionKey {
+              Button(language.text(.quotaDisconnect)) {
+                viewModel.disconnectKey()
+                subscriptionKey = ""
+              }
+            }
+          }
+        }
+        .padding(.top, 5)
+      }
+      .font(.caption)
+    case .statusLine:
+      statusLineSetup
+    case .existing, .officialCLI:
+      EmptyView()
+    }
+  }
+
+  @ViewBuilder
+  private var statusLineSetup: some View {
+    let subscription = viewModel.selectedSubscription
+    if let executable = Bundle.main.executableURL,
+      let command = SubscriptionStatusLineCapture.command(for: subscription, executable: executable)
+    {
+      DisclosureGroup(language.text(.quotaManageConnection)) {
+        VStack(alignment: .leading, spacing: 8) {
+          Text(language.text(.quotaSetupHelp))
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+          HStack {
+            Button(language.text(copiedSetup ? .quotaSetupCopied : .quotaCopySetup)) {
+              NSPasteboard.general.clearContents()
+              copiedSetup = NSPasteboard.general.setString(command, forType: .string)
+            }
+            let url =
+              subscription == .claude
+              ? URL(string: "https://code.claude.com/docs/en/statusline")!
+              : URL(string: "https://antigravity.google/docs/cli/statusline")!
+            Link(language.text(.quotaSetupGuide), destination: url)
+          }
+        }
+        .padding(.top, 5)
+      }
+      .font(.caption)
+    }
   }
 
   private var actionsSection: some View {
@@ -335,18 +376,11 @@ struct UsageMenuView: View {
     version.hasPrefix("v") ? version : "v\(version)"
   }
 
-  private var progressColor: Color {
-    progressColor(for: viewModel.snapshot?.usedPercent)
-  }
-
-  private func progressColor(for usedPercent: Double?) -> Color {
-    guard let used = usedPercent else {
-      return .accentColor
-    }
-    if used >= 90 {
+  private func progressColor(for usedPercent: Double) -> Color {
+    if usedPercent >= 90 {
       return .red
     }
-    if used >= 75 {
+    if usedPercent >= 75 {
       return .orange
     }
     return .accentColor
@@ -375,12 +409,6 @@ struct UsageMenuView: View {
     .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
   }
 
-  private func percentText(_ value: Double?) -> String {
-    guard let value else {
-      return "--"
-    }
-    return "\(Int(value.rounded()))%"
-  }
 }
 
 private struct LanguageSwitcher: View {

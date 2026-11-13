@@ -8,8 +8,11 @@ import WidgetKit
 @MainActor
 final class UsageViewModel: ObservableObject {
   @Published private(set) var snapshot: UsageSnapshot?
+  @Published private(set) var subscriptionDetails: SubscriptionUsageDetails?
   @Published private(set) var isRefreshing = false
   @Published private(set) var errorMessage: String?
+  @Published private(set) var subscriptionError: SubscriptionUsageError?
+  @Published private(set) var hasSubscriptionKey = false
   @Published private(set) var lastUpdated: Date?
   @Published private(set) var launchAtLoginEnabled = false
   @Published private(set) var launchAtLoginErrorDetails: String?
@@ -18,8 +21,8 @@ final class UsageViewModel: ObservableObject {
   @Published private(set) var isLanguageSwitching = false
   @Published private(set) var widgetSyncFailed = false
 
-  private let client: CodexAppServerClient
-  private let kimiClient: KimiUsageClient
+  private let adapters: [UsageSubscription: SubscriptionUsageAdapter]
+  private let credentials: SubscriptionCredentialStore
   private let sharedWidgetStateStore: SharedWidgetStateStore
   private let sharedUsageStore: SharedUsageStore
   private let sharedWidgetPreferencesStore: SharedWidgetPreferencesStore
@@ -31,6 +34,8 @@ final class UsageViewModel: ObservableObject {
   private var languageTransition: LanguageTransitionState
   private var activated = false
   private var refreshLoop: Task<Void, Never>?
+  private var selectionRevision = 0
+  private var refreshRequested = false
 
   init(
     client: CodexAppServerClient = CodexAppServerClient(),
@@ -43,8 +48,10 @@ final class UsageViewModel: ObservableObject {
     displayLanguage: AppLanguage? = nil,
     languageDefaults: UserDefaults = .standard
   ) {
-    self.client = client
-    self.kimiClient = kimiClient
+    let credentials = SubscriptionCredentialStore()
+    self.credentials = credentials
+    adapters = SubscriptionUsageAdapter.defaults(
+      codex: client, kimi: kimiClient, credentials: credentials)
     self.sharedWidgetStateStore = sharedWidgetStateStore
     self.sharedUsageStore = sharedUsageStore
     self.sharedWidgetPreferencesStore = sharedWidgetPreferencesStore
@@ -62,6 +69,7 @@ final class UsageViewModel: ObservableObject {
         ?? sharedWidgetStateStore.load()?.subscriptionID
         ?? sharedWidgetPreferencesStore.load()?.subscriptionID
     )
+    loadConnectionStatus()
     restoreCachedSnapshot()
     if sharedWidgetPreferencesStore.load()?.subscriptionID == "k3" {
       persistWidgetPreferences()
@@ -73,21 +81,32 @@ final class UsageViewModel: ObservableObject {
     localUsageServer.stop()
   }
 
-  var displaySnapshot: SharedUsageSnapshot? {
+  private var displaySnapshot: SharedUsageSnapshot? {
     snapshot?.shared(
       subscription: selectedSubscription, language: displayLanguage,
       updatedAt: lastUpdated ?? Date()
     )
   }
 
+  var displayDetails: SubscriptionUsageDetails {
+    if let subscriptionDetails { return subscriptionDetails }
+    if let displaySnapshot {
+      return SubscriptionUsageDetails(legacy: displaySnapshot, subscription: selectedSubscription)
+    }
+    return SubscriptionUsageDetails(
+      subscription: selectedSubscription,
+      availability: selectedSubscription.connection == .apiKey && !hasSubscriptionKey
+        ? .notConnected : .waiting)
+  }
+
   var primaryQuotaKind: UsageQuotaKind {
-    displaySnapshot?.primaryQuota.kind ?? (selectedSubscription == .codex ? .weekly : .unknown)
+    displayDetails.primaryQuota?.kind ?? (selectedSubscription == .codex ? .weekly : .unknown)
   }
 
   var menuBarText: String {
-    let name = selectedSubscription.displayName
-    if let snapshot {
-      return "\(name) \(Int(snapshot.usedPercent.rounded()))%"
+    let name = selectedSubscription.displayName(in: displayLanguage)
+    if let value = displayDetails.primaryQuota?.menuBarValue(in: displayLanguage) {
+      return "\(name) \(value)"
     }
     return isRefreshing ? "\(name) …" : "\(name) --"
   }
@@ -103,9 +122,9 @@ final class UsageViewModel: ObservableObject {
       return
     }
     selectedSubscription = subscription
-    snapshot = nil
-    lastUpdated = nil
-    errorMessage = nil
+    selectionRevision += 1
+    clearReading()
+    loadConnectionStatus()
     restoreCachedSnapshot()
     persistWidgetPreferences()
     publishWidgetState()
@@ -114,23 +133,64 @@ final class UsageViewModel: ObservableObject {
     }
   }
 
-  func planDisplayName(for language: AppLanguage) -> String {
-    guard let plan = snapshot?.planType, !plan.isEmpty else {
-      return language.text(.unknown)
+  @discardableResult
+  func connectWithKey(_ key: String) -> Bool {
+    do {
+      try credentials.save(key, for: selectedSubscription)
+      hasSubscriptionKey = true
+      connectionDidChange()
+      return true
+    } catch {
+      subscriptionError = .keychain
+      return false
     }
-    return plan.prefix(1).uppercased() + plan.dropFirst()
   }
 
-  func resetDisplayText(for language: AppLanguage) -> String {
-    language.resetDisplayText(snapshot?.resetsAt)
+  func disconnectKey() {
+    do {
+      try credentials.remove(for: selectedSubscription)
+      hasSubscriptionKey = false
+      connectionDidChange()
+    } catch {
+      subscriptionError = .keychain
+    }
   }
 
-  func lastUpdatedDisplayText(for language: AppLanguage) -> String {
-    language.lastUpdatedDisplayText(lastUpdated)
+  private func loadConnectionStatus() {
+    hasSubscriptionKey = (try? credentials.load(for: selectedSubscription)) != nil
+  }
+
+  private func connectionDidChange() {
+    selectionRevision += 1
+    clearReading()
+    publishWidgetState()
+    if hasSubscriptionKey {
+      Task { await refresh() }
+    }
+  }
+
+  private func clearReading() {
+    snapshot = nil
+    subscriptionDetails = nil
+    lastUpdated = nil
+    errorMessage = nil
+    subscriptionError = nil
+  }
+
+  func statusLineDidChange(provider: String?) {
+    guard selectedSubscription.connection == .statusLine,
+      UsageSubscription.recognized(provider) == selectedSubscription
+    else { return }
+    if isRefreshing {
+      refreshRequested = true
+    } else {
+      Task { await refresh() }
+    }
   }
 
   func errorDisplayText(for language: AppLanguage) -> String? {
-    errorMessage.map(language.localizedErrorMessage)
+    if let subscriptionError { return subscriptionError.text(in: language) }
+    return errorMessage.map(language.localizedErrorMessage)
   }
 
   func launchAtLoginErrorText(for language: AppLanguage) -> String? {
@@ -179,42 +239,50 @@ final class UsageViewModel: ObservableObject {
   }
 
   func refresh() async {
-    guard !isRefreshing else {
-      return
-    }
-
+    guard !isRefreshing, let adapter = adapters[selectedSubscription] else { return }
     let requestedSubscription = selectedSubscription
+    let revision = selectionRevision
     isRefreshing = true
     defer {
       isRefreshing = false
       applyPendingDisplayLanguageIfNeeded()
-      if requestedSubscription != selectedSubscription {
+      if refreshRequested || revision != selectionRevision {
+        refreshRequested = false
         Task { await refresh() }
       }
     }
 
     do {
-      let fetchedSnapshot: UsageSnapshot
-      switch requestedSubscription {
-      case .codex:
-        fetchedSnapshot = try await client.fetchUsage()
-      case .kimi:
-        fetchedSnapshot = try await kimiClient.fetchUsage()
-      }
-      guard requestedSubscription == selectedSubscription else { return }
-      let updatedAt = Date()
-      snapshot = fetchedSnapshot
-      lastUpdated = updatedAt
+      let reading = try await adapter.fetchUsage()
+      guard revision == selectionRevision else { return }
+      snapshot = reading.legacySnapshot
+      subscriptionDetails = reading.details
+      lastUpdated = reading.details.observedAt
       errorMessage = nil
+      subscriptionError = nil
       if let pendingLanguage = takePendingDisplayLanguage() {
         updateDisplayLanguageState(pendingLanguage)
       }
       publishWidgetState()
     } catch {
-      guard requestedSubscription == selectedSubscription else { return }
-      errorMessage =
-        (error as? LocalizedError)?.errorDescription
-        ?? error.localizedDescription
+      guard revision == selectionRevision else { return }
+      let failure = (error as? SubscriptionUsageError) ?? .unavailable
+      if requestedSubscription.connection == .existing {
+        errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+      } else if failure.availability != .waiting {
+        subscriptionError = failure
+      } else {
+        subscriptionError = nil
+      }
+      if failure.availability == .unavailable {
+        subscriptionDetails = displayDetails.withAvailability(.unavailable)
+      } else {
+        snapshot = nil
+        lastUpdated = nil
+        subscriptionDetails = SubscriptionUsageDetails(
+          subscription: requestedSubscription, availability: failure.availability)
+      }
+      publishWidgetState()
     }
   }
 
@@ -235,17 +303,40 @@ final class UsageViewModel: ObservableObject {
   }
 
   private func restoreCachedSnapshot() {
+    guard selectedSubscription.connection != .apiKey || hasSubscriptionKey else { return }
+    let shared = sharedWidgetStateStore.load()
+    let cached = appCacheStore.load()
+    let current = WidgetSnapshotResolver.resolve(
+      live: nil, shared: matchingSelection(shared), cached: matchingSelection(cached))
     let state = WidgetSnapshotResolver.resolve(
-      live: nil, shared: sharedWidgetStateStore.load(), cached: appCacheStore.load())
-    let storedSnapshot = state == nil ? sharedUsageStore.load() : state?.snapshot
-    guard let cached = storedSnapshot,
-      UsageSubscription.resolve(cached.subscriptionID) == selectedSubscription
-    else {
+      live: nil, shared: current, cached: matchingSelection(subscriptionCacheStore.load()))
+    if let state {
+      snapshot = state.snapshot.map(UsageSnapshot.init(shared:))
+      subscriptionDetails = state.displayDetails
+      lastUpdated = state.displayDetails?.observedAt
       return
     }
+    // A legacy raw file is only authoritative when no atomic publication exists.
+    guard shared == nil, cached == nil, let legacy = sharedUsageStore.load(),
+      let legacyState = matchingSelection(SharedWidgetState(snapshot: legacy, languageCode: nil))
+    else { return }
+    snapshot = legacyState.snapshot.map(UsageSnapshot.init(shared:))
+    subscriptionDetails = legacyState.displayDetails
+    lastUpdated = legacyState.displayDetails?.observedAt
+  }
 
-    snapshot = UsageSnapshot(shared: cached)
-    lastUpdated = cached.updatedAt
+  private func matchingSelection(_ state: SharedWidgetState?) -> SharedWidgetState? {
+    guard let state else { return nil }
+    let owner =
+      state.subscriptionID == nil ? .codex : UsageSubscription.recognized(state.subscriptionID)
+    return owner == selectedSubscription ? state : nil
+  }
+
+  private var subscriptionCacheStore: SharedWidgetStateStore {
+    SharedWidgetStateStore(
+      directoryURL: SharedUsageConfiguration.appCacheDirectory
+        .appendingPathComponent("subscriptions", isDirectory: true)
+        .appendingPathComponent(selectedSubscription.rawValue, isDirectory: true))
   }
 
   func loadDocumentationPreview(
@@ -255,6 +346,7 @@ final class UsageViewModel: ObservableObject {
     calendar.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60) ?? .current
 
     selectedSubscription = subscription
+    clearReading()
     switch subscription {
     case .codex:
       snapshot = UsageSnapshot(
@@ -302,6 +394,8 @@ final class UsageViewModel: ObservableObject {
           UsageQuotaWindow(kind: .fiveHour, usedPercent: 50, resetsAt: shortReset),
         ]
       )
+    default:
+      break
     }
     lastUpdated = calendar.date(
       from: DateComponents(
@@ -391,11 +485,12 @@ final class UsageViewModel: ObservableObject {
   private func publishWidgetState() {
     let state = SharedWidgetState(
       snapshot: displaySnapshot, languageCode: displayLanguage.rawValue,
-      subscriptionID: selectedSubscription.rawValue, publishedAt: Date()
+      subscriptionID: selectedSubscription.rawValue, publishedAt: Date(), details: displayDetails
     )
     localUsageServer.publish(state)
     do {
       try appCacheStore.save(state)
+      try subscriptionCacheStore.save(state)
     } catch {
       WidgetSyncDiagnostics.failure("write-app-cache", error: error)
     }
@@ -419,7 +514,8 @@ final class UsageViewModel: ObservableObject {
     WidgetSyncDiagnostics.published(state, shared: shared)
     let previous = lastPublishedWidgetState
     lastPublishedWidgetState = state
-    if previous?.snapshot != state.snapshot || previous?.languageCode != state.languageCode
+    if previous?.snapshot != state.snapshot || previous?.details != state.details
+      || previous?.languageCode != state.languageCode
       || previous?.subscriptionID != state.subscriptionID
     {
       requestWidgetReload(reason: "state-changed")

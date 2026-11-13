@@ -1,8 +1,43 @@
 import AppKit
+import CodexUsageCore
 import CodexUsageShared
 import SwiftUI
 
 @main
+@MainActor
+enum CodexUsageBarEntry {
+  static func main() {
+    let arguments = Array(CommandLine.arguments.dropFirst())
+    if arguments.first == SubscriptionStatusLineCapture.argument {
+      captureStatusLine(provider: arguments.dropFirst().first)
+      return
+    }
+    CodexUsageBarApp.main()
+  }
+
+  private static func captureStatusLine(provider: String?) {
+    guard let subscription = UsageSubscription.recognized(provider),
+      subscription.connection == .statusLine
+    else { return }
+    do {
+      var input = Data()
+      let maximum = SubscriptionStatusLineCapture.maximumBytes
+      while let data = try FileHandle.standardInput.read(upToCount: 8192), !data.isEmpty {
+        guard input.count + data.count <= maximum else { return }
+        input.append(data)
+      }
+      guard try SubscriptionStatusLineCapture.ingest(input, for: subscription) != nil else {
+        return
+      }
+      DistributedNotificationCenter.default().postNotificationName(
+        SubscriptionStatusLineCapture.notificationName, object: subscription.rawValue,
+        userInfo: nil, deliverImmediately: true)
+    } catch {
+      fputs("Codex Usage Bar could not capture the subscription quota.\n", stderr)
+    }
+  }
+}
+
 struct CodexUsageBarApp: App {
   @StateObject private var viewModel = UsageViewModel()
   @StateObject private var updateManager: UpdateManager
@@ -73,6 +108,13 @@ struct CodexUsageBarApp: App {
         NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
       ) { _ in
         Task { await viewModel.resumeAfterWake() }
+      }
+      .onReceive(
+        DistributedNotificationCenter.default().publisher(
+          for: SubscriptionStatusLineCapture.notificationName
+        ).receive(on: RunLoop.main)
+      ) { notification in
+        viewModel.statusLineDidChange(provider: notification.object as? String)
       }
     }
     .menuBarExtraStyle(.window)
