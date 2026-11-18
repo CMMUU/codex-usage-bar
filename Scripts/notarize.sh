@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${VERSION:-0.4.7}"
+VERSION="${VERSION:-0.4.8}"
 TARGET="${1:-$ROOT/dist/Codex-Usage-Bar-v$VERSION-universal.dmg}"
 if [[ ! -e "$TARGET" ]]; then
   printf 'Missing notarization target: %s\n' "$TARGET" >&2

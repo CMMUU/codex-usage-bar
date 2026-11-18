@@ -31,6 +31,7 @@ final class UsageViewModel: ObservableObject {
   private let appCacheStore = SharedWidgetStateStore(
     directoryURL: SharedUsageConfiguration.appCacheDirectory)
   private var lastPublishedWidgetState: SharedWidgetState?
+  private var isRecoveringWidgetAfterUpgrade = false
   private var languageTransition: LanguageTransitionState
   private var activated = false
   private var refreshLoop: Task<Void, Never>?
@@ -224,9 +225,19 @@ final class UsageViewModel: ObservableObject {
       return
     }
     activated = true
+    let widgetBuild = WidgetUpgradeRecovery.pendingBuild(defaults: languageDefaults)
+    isRecoveringWidgetAfterUpgrade = widgetBuild != nil
     localUsageServer.start()
     publishWidgetState()
     refreshLaunchAtLoginStatus()
+    if let widgetBuild {
+      let recovered = await WidgetUpgradeRecovery.recover(build: widgetBuild)
+      if recovered {
+        languageDefaults.set(widgetBuild, forKey: WidgetUpgradeRecovery.completedBuildKey)
+      }
+      isRecoveringWidgetAfterUpgrade = false
+      requestWidgetReload(reason: "app-build-changed")
+    }
     await refresh()
     startRefreshLoop()
   }
@@ -523,6 +534,7 @@ final class UsageViewModel: ObservableObject {
   }
 
   func requestWidgetReload(reason: String) {
+    guard !isRecoveringWidgetAfterUpgrade else { return }
     WidgetSyncDiagnostics.reload(reason: reason)
     WidgetCenter.shared.reloadTimelines(
       ofKind: SharedUsageConfiguration.widgetKind

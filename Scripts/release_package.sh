@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${VERSION:-0.4.7}"
+VERSION="${VERSION:-0.4.8}"
 export SIGNING_MODE=developer-id
 : "${APPLE_TEAM_ID:?Official releases require APPLE_TEAM_ID}"
 : "${CODE_SIGN_IDENTITY:?Official releases require Developer ID signing}"
